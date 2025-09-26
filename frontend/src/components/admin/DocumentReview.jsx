@@ -15,7 +15,7 @@ import {
   Calendar,
   Flag,
   Download,
-  Zoom,
+  ZoomIn,
   ArrowLeft
 } from 'lucide-react';
 import { vendorEcosystemAPI } from '../../services/ecosystemAPI';
