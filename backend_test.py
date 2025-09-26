@@ -11,6 +11,8 @@ import time
 import re
 from datetime import datetime
 from typing import Dict, Any, Optional
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 # Configuration
 BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
