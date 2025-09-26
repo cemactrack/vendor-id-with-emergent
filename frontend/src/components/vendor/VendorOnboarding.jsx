@@ -349,6 +349,14 @@ const VendorOnboarding = () => {
 
       case 3:
         return (
+          <DocumentUpload
+            onUploadComplete={setDocumentsUploaded}
+            vendorId={user?.id}
+          />
+        );
+
+      case 4:
+        return (
           <div className="space-y-6">
             <div className="bg-green-50 border border-green-200 rounded-lg p-6">
               <div className="flex items-center mb-4">
