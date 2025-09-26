@@ -503,7 +503,7 @@ async def approve_document(
 @admin_router.post("/documents/{document_id}/reject")
 async def reject_document(
     document_id: str,
-    reason: str,
+    request_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
     """Reject a document"""
@@ -512,6 +512,7 @@ async def reject_document(
         if current_user.get("role") not in ["verification_officer", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         
+        reason = request_data.get("reason", "")
         if not reason.strip():
             raise HTTPException(status_code=400, detail="Rejection reason is required")
         
