@@ -120,7 +120,30 @@ export const vendorEcosystemAPI = {
     return response.events;
   },
 
-  // Vendor Profile Management
+  // Document Management
+  uploadDocument: async (formData) => {
+    const response = await apiClient.post('/vendors/documents/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    return response;
+  },
+
+  getVendorDocuments: async () => {
+    const response = await apiClient.get('/vendors/documents');
+    return response.documents;
+  },
+
+  deleteDocument: async (documentId) => {
+    const response = await apiClient.delete(`/vendors/documents/${documentId}`);
+    return response;
+  },
+
+  getDocumentVerificationSummary: async () => {
+    const response = await apiClient.get('/vendors/documents/summary');
+    return response.summary;
+  },
   createVendorProfile: async (profileData) => {
     const response = await apiClient.post('/vendors/profile', profileData);
     return response.profile;
