@@ -20,11 +20,13 @@ import {
   Star,
   QrCode,
   Settings,
-  LogOut
+  LogOut,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { vendorEcosystemAPI } from '../../services/ecosystemAPI';
 import { useNavigate } from 'react-router-dom';
+import VendorIDCard from '../vendor/VendorIDCard';
 
 const VendorEcosystemDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
