@@ -68,7 +68,15 @@ class VendorEcosystemService:
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Authenticate user login"""
         user_doc = await self.users_collection.find_one({"email": email})
-        if not user_doc or not self.pwd_context.verify(password, user_doc.get("password_hash")):
+        if not user_doc:
+            return None
+        
+        # Fix for bcrypt 72-byte limit issue with passlib
+        password_to_verify = password
+        if len(password_to_verify.encode('utf-8')) > 72:
+            password_to_verify = password_to_verify[:72]
+            
+        if not self.pwd_context.verify(password_to_verify, user_doc.get("password_hash")):
             return None
         
         # Update last login
