@@ -209,7 +209,7 @@ const DocumentReview = ({ documentId, onClose, onStatusUpdate }) => {
                   <h4 className="font-medium">Document Preview</h4>
                   <div className="flex space-x-2">
                     <Button size="sm" variant="outline">
-                      <Zoom className="w-4 h-4 mr-1" />
+                      <ZoomIn className="w-4 h-4 mr-1" />
                       Zoom
                     </Button>
                     <Button size="sm" variant="outline">
