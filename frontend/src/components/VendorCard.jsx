@@ -250,8 +250,17 @@ const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
 
         {/* QR Code - Right Side */}
         <div className="absolute top-20 right-6">
-          <div className="w-16 h-16 bg-white border border-gray-300 rounded flex items-center justify-center">
-            <div className="w-14 h-14 bg-black opacity-80 flex items-center justify-center text-white text-xs">
+          <div className="w-16 h-16 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden">
+            <img 
+              src={vendorAPI.getQRCodeURL(vendor.id)} 
+              alt="QR Code"
+              className="w-14 h-14 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-14 h-14 bg-black opacity-80 flex items-center justify-center text-white text-xs" style={{display: 'none'}}>
               QR
             </div>
           </div>
