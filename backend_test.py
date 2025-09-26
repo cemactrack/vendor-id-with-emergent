@@ -16,7 +16,7 @@ BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
 TEST_USER_EMAIL = "testvendor@example.com"
 TEST_USER_PASSWORD = "test123"
 TEST_ADMIN_EMAIL = "admin@vendorsecure.com"
-TEST_ADMIN_PASSWORD = "Admin123"
+TEST_ADMIN_PASSWORD = "admin123"
 
 class VendorEcosystemTester:
     def __init__(self):
