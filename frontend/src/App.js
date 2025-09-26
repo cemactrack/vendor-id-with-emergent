@@ -11,6 +11,7 @@ import EmailVerification from "./components/auth/EmailVerification";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import TwoFactorSetup from "./components/auth/TwoFactorSetup";
+import LandingPage from "./components/LandingPage";
 import ResponsiveVendorDashboard from "./components/ResponsiveVendorDashboard";
 import VendorEcosystemDashboard from "./components/ecosystem/VendorEcosystemDashboard";
 import PublicVendorSearch from "./components/public/PublicVendorSearch";
