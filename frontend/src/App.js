@@ -7,6 +7,10 @@ import { Toaster } from "./components/ui/toaster";
 // Import components
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
+import EmailVerification from "./components/auth/EmailVerification";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import ResetPassword from "./components/auth/ResetPassword";
+import TwoFactorSetup from "./components/auth/TwoFactorSetup";
 import ResponsiveVendorDashboard from "./components/ResponsiveVendorDashboard";
 import VendorEcosystemDashboard from "./components/ecosystem/VendorEcosystemDashboard";
 import PublicVendorSearch from "./components/public/PublicVendorSearch";
