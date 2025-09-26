@@ -40,7 +40,11 @@ class VendorEcosystemService:
             raise ValueError("User with this email already exists")
         
         user_id = str(uuid.uuid4())
-        hashed_password = self.pwd_context.hash(user_data.password)
+        # Fix for bcrypt 72-byte limit issue with passlib
+        password_to_hash = user_data.password
+        if len(password_to_hash.encode('utf-8')) > 72:
+            password_to_hash = password_to_hash[:72]
+        hashed_password = self.pwd_context.hash(password_to_hash)
         
         user_dict = {
             "id": user_id,
