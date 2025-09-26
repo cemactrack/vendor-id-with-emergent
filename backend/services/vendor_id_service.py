@@ -16,7 +16,7 @@ class VendorIDService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.vendor_ids_collection = db.vendor_ids
-        self.vendor_profiles_collection = db.vendor_profiles
+        self.vendors_collection = db.vendor_profiles
         
         # Country code mapping
         self.country_codes = {
