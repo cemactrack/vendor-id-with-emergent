@@ -450,7 +450,7 @@ async def get_document_for_review(
 @admin_router.post("/documents/{document_id}/approve")
 async def approve_document(
     document_id: str,
-    notes: str = "",
+    request_data: dict = {},
     current_user: dict = Depends(get_current_user)
 ):
     """Approve a document"""
@@ -458,6 +458,8 @@ async def approve_document(
         # Check admin permissions
         if current_user.get("role") not in ["verification_officer", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        notes = request_data.get("notes", "") if request_data else ""
         
         success, message = await document_service.approve_document(
             document_id, 
