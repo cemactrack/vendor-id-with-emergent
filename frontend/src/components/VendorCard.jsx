@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { RotateCcw, Print, Download } from 'lucide-react';
+import { RotateCcw, Printer, Download } from 'lucide-react';
 import { generateQRCode, generateBarcode } from '../data/mock';
 
 const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
