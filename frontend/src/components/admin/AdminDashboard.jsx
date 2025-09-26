@@ -215,9 +215,17 @@ const AdminDashboard = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="verifications">Verifications</TabsTrigger>
+            <TabsTrigger value="verifications">
+              Verification Queue
+              {stats?.verification_requests_pending > 0 && (
+                <Badge className="ml-2 bg-red-500 text-white text-xs">
+                  {stats.verification_requests_pending}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="fraud">Fraud Reports</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
