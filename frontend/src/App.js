@@ -163,7 +163,9 @@ const AppContent = () => {
           path="/onboarding" 
           element={
             <ProtectedRoute requiredRole="vendor">
-              <VendorOnboarding />
+              <div className="min-h-screen">
+                <VendorOnboarding />
+              </div>
             </ProtectedRoute>
           } 
         />
