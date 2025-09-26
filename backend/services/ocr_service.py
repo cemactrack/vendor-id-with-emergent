@@ -450,7 +450,7 @@ class DocumentOCRService:
                 'expected_fields': expected_fields,
                 'field_validations': validation_results,
                 'overall_validation_score': float(overall_validation_score),
-                'validation_passed': overall_validation_score > 0.7
+                'validation_passed': bool(overall_validation_score > 0.7)  # Convert numpy bool to Python bool
             }
             
             # Store validation results
