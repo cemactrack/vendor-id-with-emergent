@@ -199,7 +199,7 @@ class VendorIDService:
                 return None
             
             # Get vendor profile
-            vendor_profile = await self.vendor_profiles_collection.find_one({
+            vendor_profile = await self.vendors_collection.find_one({
                 "vendor_id": vendor_id_record["vendor_id"]
             })
             
