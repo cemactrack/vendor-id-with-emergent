@@ -8,6 +8,7 @@ import hashlib
 import secrets
 import uuid
 from passlib.context import CryptContext
+import bcrypt
 import jwt
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
