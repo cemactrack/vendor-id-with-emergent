@@ -354,7 +354,11 @@
 
 ## test_plan:
   current_focus:
-    - "All frontend components tested successfully"
+    - "Email Verification System"
+    - "Password Reset System"
+    - "Two-Factor Authentication"
+    - "Enhanced Login System"
+    - "Security Management"
   stuck_tasks:
     - "None currently"
   test_all: false
