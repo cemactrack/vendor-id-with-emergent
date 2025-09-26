@@ -270,7 +270,7 @@ const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
             Flip Card
           </Button>
           <Button onClick={handlePrint} variant="outline" size="sm">
-            <Print className="w-4 h-4 mr-2" />
+            <Printer className="w-4 h-4 mr-2" />
             Print
           </Button>
         </div>
