@@ -299,9 +299,14 @@ const AdminDashboard = () => {
           </TabsContent>
 
           {/* Verifications Tab */}
-          <TabsContent value="verifications" className="space-y-6">
+          <TabsContent value="verifications">
+            <VerificationQueue />
+          </TabsContent>
+
+          {/* Vendors Tab */}
+          <TabsContent value="vendors" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Pending Verifications</h3>
+              <h3 className="text-lg font-semibold">Vendor Management</h3>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm">
                   <Filter className="w-4 h-4 mr-2" />
@@ -314,152 +319,15 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="grid gap-6">
-              {pendingVerifications.length > 0 ? (
-                pendingVerifications.map((verification) => (
-                  <Card key={verification.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <Badge className={`${getVerificationStatusColor(verification.status)} text-white`}>
-                              {getStatusIcon(verification.status)}
-                              <span className="ml-1 capitalize">
-                                {verification.status?.replace('_', ' ')}
-                              </span>
-                            </Badge>
-                            <span className="text-sm text-gray-600">
-                              Priority: {verification.priority}/5
-                            </span>
-                          </div>
-                          
-                          <h4 className="font-semibold text-gray-900 mb-1">
-                            Vendor ID: {verification.vendor_id}
-                          </h4>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Requested: {new Date(verification.created_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Type: {verification.verification_type?.replace('_', ' ')}
-                          </p>
-                          
-                          {verification.notes && (
-                            <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
-                              {verification.notes}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedVerification(verification)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Review
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center py-8">
-                      <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">All caught up!</h3>
-                      <p className="text-gray-600">No pending verifications at the moment</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Verification Modal */}
-            {selectedVerification && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <Card className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                  <CardHeader>
-                    <CardTitle>Review Verification Request</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold mb-2">Vendor ID: {selectedVerification.vendor_id}</h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Status:</span>
-                          <Badge className={`ml-2 ${getVerificationStatusColor(selectedVerification.status)} text-white`}>
-                            {selectedVerification.status}
-                          </Badge>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Priority:</span>
-                          <span className="ml-2 font-medium">{selectedVerification.priority}/5</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Created:</span>
-                          <span className="ml-2">{new Date(selectedVerification.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Type:</span>
-                          <span className="ml-2">{selectedVerification.verification_type}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Verification Notes
-                      </label>
-                      <Textarea
-                        value={verificationNotes}
-                        onChange={(e) => setVerificationNotes(e.target.value)}
-                        placeholder="Add notes about this verification..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="flex justify-between space-x-4">
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => handleVerificationAction(selectedVerification.id, 'verified')}
-                          disabled={updating}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Approve
-                        </Button>
-                        <Button
-                          onClick={() => handleVerificationAction(selectedVerification.id, 'rejected')}
-                          disabled={updating}
-                          variant="destructive"
-                        >
-                          <AlertTriangle className="w-4 h-4 mr-2" />
-                          Reject
-                        </Button>
-                        <Button
-                          onClick={() => handleVerificationAction(selectedVerification.id, 'under_review')}
-                          disabled={updating}
-                          variant="outline"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Review Later
-                        </Button>
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => setSelectedVerification(null)}
-                        disabled={updating}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Vendor management coming soon</h3>
+                  <p className="text-gray-600">Advanced vendor management tools will be available here</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Fraud Reports Tab */}
