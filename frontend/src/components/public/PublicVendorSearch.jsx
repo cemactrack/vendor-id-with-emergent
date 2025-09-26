@@ -311,8 +311,8 @@ const PublicVendorSearch = () => {
               <Button 
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedCategory('');
-                  setSelectedCountry('');
+                  setSelectedCategory('all');
+                  setSelectedCountry('all');
                   setCurrentPage(1);
                 }}
                 variant="outline"
