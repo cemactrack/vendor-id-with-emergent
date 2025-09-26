@@ -111,11 +111,41 @@ async def register_user(user_data: UserCreate):
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @auth_router.post("/login")
-async def login_user(email: str, password: str):
-    """User login"""
+async def login_user(email: str, password: str, totp_token: Optional[str] = None, backup_code: Optional[str] = None):
+    """Enhanced user login with 2FA support"""
+    # Check account lockout
+    is_locked, locked_until = await auth_service.is_account_locked(email)
+    if is_locked:
+        raise HTTPException(
+            status_code=423, 
+            detail=f"Account locked due to multiple failed attempts. Try again after {locked_until}"
+        )
+    
+    # Authenticate user
     user = await ecosystem_service.authenticate_user(email, password)
     if not user:
+        # Record failed login attempt
+        await auth_service.record_login_attempt(email, False)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if 2FA is enabled
+    security_info = await auth_service.get_user_security_info(user.id)
+    if security_info and security_info.get("two_factor_enabled"):
+        if not totp_token and not backup_code:
+            # Record successful password authentication but require 2FA
+            return {
+                "requires_2fa": True,
+                "message": "Please provide 2FA code"
+            }
+        
+        # Verify 2FA
+        success, error = await auth_service.verify_two_factor(user.id, totp_token, backup_code)
+        if not success:
+            await auth_service.record_login_attempt(email, False)
+            raise HTTPException(status_code=401, detail=error or "Invalid 2FA code")
+    
+    # Record successful login
+    await auth_service.record_login_attempt(email, True)
     
     token = ecosystem_service.generate_jwt_token(user)
     return {
@@ -123,6 +153,154 @@ async def login_user(email: str, password: str):
         "token": token,
         "message": "Login successful"
     }
+
+@auth_router.post("/register")
+async def register_user(user_data: UserCreate):
+    """Enhanced user registration with email verification"""
+    try:
+        user = await ecosystem_service.create_user(user_data)
+        
+        # Send email verification
+        email_sent = await auth_service.send_email_verification(
+            user.id, 
+            user.email, 
+            user.full_name
+        )
+        
+        if not email_sent:
+            logger.warning(f"Failed to send verification email to {user.email}")
+        
+        token = ecosystem_service.generate_jwt_token(user)
+        return {
+            "user": user,
+            "token": token,
+            "message": "User registered successfully. Please check your email for verification.",
+            "email_verification_sent": email_sent
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+# Enhanced Authentication Endpoints
+@auth_router.post("/verify-email")
+async def verify_email(request: EmailVerificationVerify):
+    """Verify user email"""
+    success, message = await auth_service.verify_email(request.token)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": message}
+
+@auth_router.post("/resend-verification")
+async def resend_email_verification(current_user: dict = Depends(get_current_user)):
+    """Resend email verification"""
+    user = await ecosystem_service.users_collection.find_one({"id": current_user["user_id"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    success = await auth_service.send_email_verification(
+        user["id"], 
+        user["email"], 
+        user["full_name"]
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+    
+    return {"message": "Verification email sent"}
+
+@auth_router.post("/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    """Request password reset"""
+    success = await auth_service.request_password_reset(request.email)
+    
+    # Always return success to prevent email enumeration
+    return {"message": "If the email exists, a password reset link has been sent"}
+
+@auth_router.post("/reset-password")
+async def reset_password(request: PasswordReset):
+    """Reset password using token"""
+    success, message = await auth_service.reset_password(request.token, request.new_password)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": message}
+
+# Two-Factor Authentication Endpoints
+@auth_router.post("/2fa/setup")
+async def setup_two_factor(request: TwoFactorSetup, current_user: dict = Depends(get_current_user)):
+    """Setup 2FA for user"""
+    success, setup_data, error = await auth_service.setup_two_factor(
+        current_user["user_id"], 
+        request.password
+    )
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=error)
+    
+    return {
+        "message": "2FA setup initiated. Scan the QR code with your authenticator app.",
+        "setup_data": setup_data
+    }
+
+@auth_router.post("/2fa/enable")
+async def enable_two_factor(request: TwoFactorVerify, current_user: dict = Depends(get_current_user)):
+    """Enable 2FA after verification"""
+    success, message = await auth_service.enable_two_factor(current_user["user_id"], request.token)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": message}
+
+@auth_router.post("/2fa/disable")
+async def disable_two_factor(request: TwoFactorDisable, current_user: dict = Depends(get_current_user)):
+    """Disable 2FA"""
+    success, message = await auth_service.disable_two_factor(
+        current_user["user_id"], 
+        request.password, 
+        request.token
+    )
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": message}
+
+@auth_router.post("/2fa/verify")
+async def verify_two_factor_code(request: TwoFactorVerify, current_user: dict = Depends(get_current_user)):
+    """Verify 2FA code"""
+    success, message = await auth_service.verify_two_factor(current_user["user_id"], request.token)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=message or "Invalid 2FA code")
+    
+    return {"message": "2FA code verified successfully"}
+
+# Security & Account Management Endpoints
+@auth_router.get("/security/info")
+async def get_security_info(current_user: dict = Depends(get_current_user)):
+    """Get user security information"""
+    security_info = await auth_service.get_user_security_info(current_user["user_id"])
+    
+    if not security_info:
+        # Return default security info for new users
+        security_info = {
+            "user_id": current_user["user_id"],
+            "email_verified": False,
+            "two_factor_enabled": False,
+            "failed_login_attempts": 0,
+            "account_locked_until": None
+        }
+    
+    return {"security": security_info}
+
+@auth_router.get("/security/events")
+async def get_security_events(current_user: dict = Depends(get_current_user), limit: int = 20):
+    """Get recent security events"""
+    events = await auth_service.get_security_events(current_user["user_id"], limit)
+    return {"events": events}
 
 # Vendor Profile Endpoints
 @vendor_router.post("/profile")
