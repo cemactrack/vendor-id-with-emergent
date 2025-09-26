@@ -26,7 +26,7 @@ class EmailService:
     
     def generate_reset_token(self) -> str:
         """Generate secure password reset token"""
-        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48)
+        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48))
     
     async def send_verification_email(self, email: str, full_name: str, token: str) -> bool:
         """Send email verification email"""
