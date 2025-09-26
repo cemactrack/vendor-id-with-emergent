@@ -9,7 +9,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<EnhancedVendorDashboard />} />
+          <Route path="/" element={<ResponsiveVendorDashboard />} />
         </Routes>
       </BrowserRouter>
       <Toaster />
