@@ -211,6 +211,17 @@ const AppContent = () => {
         />
         
         <Route 
+          path="/ocr-processing" 
+          element={
+            <ProtectedRoute requiredRole="vendor">
+              <Layout>
+                <OCRProcessing />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
           path="/admin" 
           element={
             <ProtectedRoute requiredRole="verification_officer">
