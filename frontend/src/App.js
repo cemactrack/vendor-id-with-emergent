@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import VendorDashboard from "./components/VendorDashboard";
+import EnhancedVendorDashboard from "./components/EnhancedVendorDashboard";
 import { Toaster } from "./components/ui/toaster";
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<VendorDashboard />} />
+          <Route path="/" element={<EnhancedVendorDashboard />} />
         </Routes>
       </BrowserRouter>
       <Toaster />
