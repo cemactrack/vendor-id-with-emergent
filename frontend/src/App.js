@@ -94,7 +94,9 @@ const AppContent = () => {
           path="/login" 
           element={
             <PublicRoute>
-              <LoginForm onSuccess={() => window.location.href = '/dashboard'} />
+              <div className="min-h-screen">
+                <LoginForm onSuccess={() => window.location.href = '/dashboard'} />
+              </div>
             </PublicRoute>
           } 
         />
@@ -102,19 +104,27 @@ const AppContent = () => {
           path="/register" 
           element={
             <PublicRoute>
-              <RegisterForm onSuccess={() => window.location.href = '/onboarding'} />
+              <div className="min-h-screen">
+                <RegisterForm onSuccess={() => window.location.href = '/onboarding'} />
+              </div>
             </PublicRoute>
           } 
         />
         <Route 
           path="/verify-email" 
-          element={<EmailVerification />} 
+          element={
+            <div className="min-h-screen">
+              <EmailVerification />
+            </div>
+          } 
         />
         <Route 
           path="/forgot-password" 
           element={
             <PublicRoute>
-              <ForgotPassword />
+              <div className="min-h-screen">
+                <ForgotPassword />
+              </div>
             </PublicRoute>
           } 
         />
@@ -122,7 +132,9 @@ const AppContent = () => {
           path="/reset-password" 
           element={
             <PublicRoute>
-              <ResetPassword />
+              <div className="min-h-screen">
+                <ResetPassword />
+              </div>
             </PublicRoute>
           } 
         />
@@ -130,7 +142,9 @@ const AppContent = () => {
           path="/2fa-setup" 
           element={
             <ProtectedRoute>
-              <TwoFactorSetup />
+              <div className="min-h-screen">
+                <TwoFactorSetup />
+              </div>
             </ProtectedRoute>
           } 
         />
