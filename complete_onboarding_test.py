@@ -16,8 +16,8 @@ from typing import Dict, Any, Optional
 BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
 TEST_VENDOR_EMAIL = "complete-test@example.com"
 TEST_VENDOR_PASSWORD = "CompleteTest123!"
-TEST_ADMIN_EMAIL = "admin.verification@vendorsecure.com"
-TEST_ADMIN_PASSWORD = "AdminVerify123!"
+TEST_ADMIN_EMAIL = "admin.test@vendorsecure.com"
+TEST_ADMIN_PASSWORD = "AdminTest123!"
 
 class CompleteOnboardingTester:
     def __init__(self):
