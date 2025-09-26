@@ -186,12 +186,9 @@ class VendorEcosystemTester:
     def test_admin_login(self):
         """Test admin login"""
         try:
-            login_data = {
-                "email": TEST_ADMIN_EMAIL,
-                "password": TEST_ADMIN_PASSWORD
-            }
+            url = f"{self.base_url}/auth/login?email={TEST_ADMIN_EMAIL}&password={TEST_ADMIN_PASSWORD}"
             
-            response = self.make_request("POST", "/auth/login", login_data)
+            response = requests.post(url, headers={"Content-Type": "application/json"}, timeout=30)
             
             if response.status_code == 200:
                 data = response.json()
