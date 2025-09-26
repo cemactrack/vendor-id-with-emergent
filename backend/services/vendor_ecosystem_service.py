@@ -80,13 +80,20 @@ class VendorEcosystemService:
         if not user_doc:
             return None
         
-        # Fix for bcrypt 72-byte limit issue with passlib
-        password_to_verify = password
-        if len(password_to_verify.encode('utf-8')) > 72:
-            password_to_verify = password_to_verify[:72]
-            
-        if not self.pwd_context.verify(password_to_verify, user_doc.get("password_hash")):
-            return None
+        # Use direct bcrypt to avoid passlib compatibility issues
+        if self.use_direct_bcrypt:
+            password_bytes = password.encode('utf-8')
+            stored_hash = user_doc.get("password_hash").encode('utf-8')
+            if not bcrypt.checkpw(password_bytes, stored_hash):
+                return None
+        else:
+            # Fix for bcrypt 72-byte limit issue with passlib
+            password_to_verify = password
+            if len(password_to_verify.encode('utf-8')) > 72:
+                password_to_verify = password_to_verify[:72]
+                
+            if not self.pwd_context.verify(password_to_verify, user_doc.get("password_hash")):
+                return None
         
         # Update last login
         await self.users_collection.update_one(
