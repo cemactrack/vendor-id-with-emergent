@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Suite for Vendor Verification and Trust Ecosystem
-Tests all authentication, vendor profile, document, admin, and public endpoints
+Enhanced Backend API Testing Suite for Vendor Verification and Trust Ecosystem
+Tests all authentication including enhanced features: email verification, password reset, 2FA, security management
 """
 
 import requests
 import json
 import base64
 import time
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional
 
 # Configuration
 BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
-TEST_USER_EMAIL = "testvendor@example.com"
-TEST_USER_PASSWORD = "testpass"
-TEST_ADMIN_EMAIL = "admin@vendorsecure.com"
-TEST_ADMIN_PASSWORD = "adminpass"
+TEST_USER_EMAIL = "enhanced.auth.test@example.com"
+TEST_USER_PASSWORD = "SecureTestPass123!"
+TEST_ADMIN_EMAIL = "admin.enhanced@vendorsecure.com"
+TEST_ADMIN_PASSWORD = "AdminSecurePass123!"
+TEST_2FA_USER_EMAIL = "twofa.test@example.com"
+TEST_2FA_PASSWORD = "TwoFATestPass123!"
 
 class VendorEcosystemTester:
     def __init__(self):
