@@ -85,7 +85,7 @@ const AppContent = () => {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<PublicVendorSearch />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/search" element={<PublicVendorSearch />} />
         <Route path="/verify/:vendorId" element={<PublicVendorVerification />} />
         
