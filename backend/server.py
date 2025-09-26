@@ -427,7 +427,7 @@ async def get_document_for_review(
             raise HTTPException(status_code=404, detail="Document not found")
         
         # Get vendor profile
-        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+        vendor_profile = await ecosystem_service.vendors_collection.find_one({
             "vendor_id": document["vendor_id"]
         })
         
@@ -481,7 +481,7 @@ async def approve_document(
                 # If verification is complete, generate Vendor ID
                 if summary.get("verification_complete"):
                     # Get vendor profile for country info
-                    vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+                    vendor_profile = await ecosystem_service.vendors_collection.find_one({
                         "vendor_id": document["vendor_id"]
                     })
                     
@@ -564,7 +564,7 @@ async def request_physical_card(
     """Request physical vendor ID card"""
     try:
         # Get vendor profile
-        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+        vendor_profile = await ecosystem_service.vendors_collection.find_one({
             "user_id": current_user["user_id"]
         })
         
