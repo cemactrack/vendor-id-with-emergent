@@ -318,7 +318,7 @@ class DocumentOCRService:
                 'file_type': file_type,
                 'processing_timestamp': start_time,
                 'processing_time_seconds': processing_time,
-                'overall_confidence': float(overall_confidence),
+                'overall_confidence': overall_confidence,
                 'total_words_extracted': total_words,
                 'page_count': len(ocr_results),
                 'combined_text': combined_text,
