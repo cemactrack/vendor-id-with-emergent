@@ -7,6 +7,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Progress } from '../ui/progress';
+import { Badge } from '../ui/badge';
 import { 
   Building2, 
   MapPin, 
@@ -18,11 +19,14 @@ import {
   ArrowRight,
   ArrowLeft,
   Shield,
-  Upload
+  Upload,
+  Award,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { vendorEcosystemAPI } from '../../services/ecosystemAPI';
 import { useNavigate } from 'react-router-dom';
+import DocumentUpload from './DocumentUpload';
 
 const VendorOnboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -35,8 +39,10 @@ const VendorOnboarding = () => {
     registration_number: '',
     tax_id: '',
     established_year: '',
-    employee_count: ''
+    employee_count: '',
+    logo_url: ''
   });
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
