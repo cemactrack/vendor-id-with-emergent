@@ -26,6 +26,7 @@ from services.vendor_id_service import VendorIDService
 from services.qr_barcode_service import QRBarcodeService
 from services.upload_service import UploadService
 from services.template_service import TemplateService
+from services.ocr_service import DocumentOCRService
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
