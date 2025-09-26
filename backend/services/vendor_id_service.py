@@ -252,7 +252,7 @@ class VendorIDService:
                     "vendor_id_number": vendor_id_number
                 })
                 if vendor_record:
-                    await self.vendor_profiles_collection.update_one(
+                    await self.vendors_collection.update_one(
                         {"vendor_id": vendor_record["vendor_id"]},
                         {"$set": {"trust_score": new_score}}
                     )
@@ -314,7 +314,7 @@ class VendorIDService:
                     "vendor_id_number": vendor_id_number
                 })
                 if vendor_record:
-                    await self.vendor_profiles_collection.update_one(
+                    await self.vendors_collection.update_one(
                         {"vendor_id": vendor_record["vendor_id"]},
                         {"$set": {"verification_status": "suspended"}}
                     )
@@ -352,7 +352,7 @@ class VendorIDService:
                     "vendor_id_number": vendor_id_number
                 })
                 if vendor_record:
-                    await self.vendor_profiles_collection.update_one(
+                    await self.vendors_collection.update_one(
                         {"vendor_id": vendor_record["vendor_id"]},
                         {"$set": {"verification_status": "verified"}}
                     )
