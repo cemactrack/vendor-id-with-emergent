@@ -177,10 +177,76 @@ const AppContent = () => {
         />
         
         <Route 
+          path="/security-settings" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SecuritySettings />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/documents" 
+          element={
+            <ProtectedRoute requiredRole="vendor">
+              <Layout>
+                <DocumentUpload />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/vendor-id" 
+          element={
+            <ProtectedRoute requiredRole="vendor">
+              <Layout>
+                <VendorIDCard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
           path="/admin" 
           element={
             <ProtectedRoute requiredRole="verification_officer">
               <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/verification-queue" 
+          element={
+            <ProtectedRoute requiredRole="verification_officer">
+              <Layout>
+                <VerificationQueue />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/document-review/:documentId" 
+          element={
+            <ProtectedRoute requiredRole="verification_officer">
+              <Layout>
+                <DocumentReview />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/document-review" 
+          element={
+            <ProtectedRoute requiredRole="verification_officer">
+              <Layout>
+                <DocumentReview />
+              </Layout>
             </ProtectedRoute>
           } 
         />
