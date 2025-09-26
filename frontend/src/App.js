@@ -105,6 +105,34 @@ const AppContent = () => {
             </PublicRoute>
           } 
         />
+        <Route 
+          path="/verify-email" 
+          element={<EmailVerification />} 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/2fa-setup" 
+          element={
+            <ProtectedRoute>
+              <TwoFactorSetup />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* Protected Routes */}
         <Route 
