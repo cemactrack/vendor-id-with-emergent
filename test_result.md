@@ -417,11 +417,10 @@
 
 ## test_plan:
   current_focus:
-    - "Email Verification System"
-    - "Password Reset System"
-    - "Two-Factor Authentication"
-    - "Enhanced Login System"
-    - "Security Management"
+    - "OCR Document Processing"
+    - "OCR Results Retrieval"
+    - "OCR Data Validation"
+    - "OCR Summary and Analytics"
   stuck_tasks:
     - "None currently"
   test_all: false
