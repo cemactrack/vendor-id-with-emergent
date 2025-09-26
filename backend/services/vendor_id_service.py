@@ -167,7 +167,7 @@ class VendorIDService:
         """Generate digital vendor ID card"""
         try:
             # Get vendor profile for additional info
-            vendor_profile = await self.vendor_profiles_collection.find_one({"vendor_id": vendor_id})
+            vendor_profile = await self.vendors_collection.find_one({"vendor_id": vendor_id})
             
             # Create a simple digital card (text-based for now)
             card_data = {
