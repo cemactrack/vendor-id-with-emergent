@@ -327,7 +327,18 @@ class VendorEcosystemTester:
                 "description": "Test business registration document"
             }
             
-            response = self.make_request("POST", "/vendors/documents", document_data, token=self.vendor_token)
+            # Use multipart form data for file upload
+            files = {
+                'file': ('business_registration.pdf', base64.b64decode(encoded_content), 'application/pdf')
+            }
+            data = {
+                'document_type': 'business_registration'
+            }
+            
+            url = f"{self.base_url}/vendors/documents/upload"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
             
             if response.status_code == 200:
                 data = response.json()
