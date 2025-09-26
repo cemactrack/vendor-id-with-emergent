@@ -84,7 +84,7 @@ class VendorIDService:
             await self.vendor_ids_collection.insert_one(vendor_id_record)
             
             # Update vendor profile
-            await self.vendor_profiles_collection.update_one(
+            await self.vendors_collection.update_one(
                 {"vendor_id": vendor_id},
                 {
                     "$set": {
