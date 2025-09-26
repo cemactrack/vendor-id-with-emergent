@@ -572,6 +572,55 @@ class VendorEcosystemService:
         )
     
     # Dashboard Data
+    async def get_vendor_dashboard(self, user_id: str) -> Dict[str, Any]:
+        """Get vendor dashboard data by user ID"""
+        # First get the vendor profile by user_id
+        vendor_profile = await self.vendors_collection.find_one({"user_id": user_id})
+        if not vendor_profile:
+            raise ValueError("Vendor profile not found")
+        
+        vendor_id = vendor_profile["vendor_id"]
+        
+        # Get analytics
+        analytics_doc = await self.analytics_collection.find_one({"vendor_id": vendor_id})
+        if not analytics_doc:
+            # Create default analytics
+            analytics_doc = {
+                "vendor_id": vendor_id,
+                "profile_views": 0,
+                "verification_requests": 0,
+                "trust_score_changes": 0,
+                "marketplace_interactions": 0,
+                "fraud_reports": 0,
+                "created_at": datetime.utcnow()
+            }
+            await self.analytics_collection.insert_one(analytics_doc)
+        
+        # Get active listings
+        listings_docs = await self.listings_collection.find({"vendor_id": vendor_id}).to_list(None)
+        active_listings = len(listings_docs)
+        
+        # Get verification status
+        verification_status = vendor_profile.get("verification_status", "pending")
+        
+        # Remove MongoDB _id from profile
+        vendor_profile.pop("_id", None)
+        
+        return {
+            "dashboard": {
+                "profile": vendor_profile,
+                "analytics": {
+                    "profile_views": analytics_doc.get("profile_views", 0),
+                    "verification_requests": analytics_doc.get("verification_requests", 0),
+                    "trust_score_changes": analytics_doc.get("trust_score_changes", 0),
+                    "marketplace_interactions": analytics_doc.get("marketplace_interactions", 0),
+                    "fraud_reports": analytics_doc.get("fraud_reports", 0)
+                },
+                "active_listings": active_listings,
+                "verification_status": verification_status
+            }
+        }
+    
     async def get_vendor_dashboard_data(self, vendor_id: str) -> Optional[VendorDashboardData]:
         """Get complete vendor dashboard data"""
         vendor = await self.get_vendor_profile(vendor_id)
