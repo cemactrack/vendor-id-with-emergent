@@ -270,7 +270,13 @@ class VendorEcosystemService:
     async def get_vendor_documents(self, vendor_id: str) -> List[Document]:
         """Get all documents for a vendor"""
         documents = await self.documents_collection.find({"vendor_id": vendor_id}).to_list(None)
-        return [Document(**{**doc, "id": doc.pop("_id", doc.get("id"))}) for doc in documents]
+        result = []
+        for doc in documents:
+            # Convert ObjectId to string
+            doc_dict = dict(doc)
+            doc_dict["id"] = str(doc_dict.pop("_id", doc_dict.get("id", "")))
+            result.append(Document(**doc_dict))
+        return result
     
     # Verification Workflow
     async def create_verification_request(self, vendor_id: str, requested_by: str) -> VerificationRequest:
