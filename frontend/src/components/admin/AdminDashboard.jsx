@@ -27,6 +27,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { vendorEcosystemAPI } from '../../services/ecosystemAPI';
 import { useNavigate } from 'react-router-dom';
+import VerificationQueue from './VerificationQueue';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
