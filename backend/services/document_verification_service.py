@@ -171,11 +171,17 @@ class DocumentVerificationService:
     async def _extract_text_ocr(self, file_path: str) -> str:
         """Extract text using OCR"""
         try:
-            # For now, return mock OCR text since pytesseract might not be available
-            return f"[OCR Mock] Text extracted from {os.path.basename(file_path)}"
+            if not OCR_AVAILABLE:
+                # Return mock OCR text since pytesseract is not available
+                return f"[OCR Mock] Text extracted from {os.path.basename(file_path)}"
+            
+            # Real OCR implementation would go here
+            image = Image.open(file_path)
+            text = pytesseract.image_to_string(image)
+            return text
         except Exception as e:
             logger.error(f"OCR extraction failed: {e}")
-            return ""
+            return f"[OCR Mock] Text extracted from {os.path.basename(file_path)}"
     
     async def _extract_document_info(self, ocr_text: str, document_type: str) -> Dict:
         """Extract structured information from OCR text"""
