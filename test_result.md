@@ -429,10 +429,7 @@
 
 ## test_plan:
   current_focus:
-    - "OCR Document Processing"
-    - "OCR Results Retrieval"
-    - "OCR Data Validation"
-    - "OCR Summary and Analytics"
+    - "All OCR tasks completed successfully"
   stuck_tasks:
     - "None currently"
   test_all: false
