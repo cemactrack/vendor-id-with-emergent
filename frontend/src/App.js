@@ -11,6 +11,7 @@ import EmailVerification from "./components/auth/EmailVerification";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import TwoFactorSetup from "./components/auth/TwoFactorSetup";
+import SecuritySettings from "./components/auth/SecuritySettings";
 import LandingPage from "./components/LandingPage";
 import Layout from "./components/layout/Layout";
 import ResponsiveVendorDashboard from "./components/ResponsiveVendorDashboard";
@@ -19,6 +20,10 @@ import PublicVendorSearch from "./components/public/PublicVendorSearch";
 import PublicVendorVerification from "./components/public/PublicVendorVerification";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import VendorOnboarding from "./components/vendor/VendorOnboarding";
+import DocumentUpload from "./components/vendor/DocumentUpload";
+import VendorIDCard from "./components/vendor/VendorIDCard";
+import DocumentReview from "./components/admin/DocumentReview";
+import VerificationQueue from "./components/admin/VerificationQueue";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
