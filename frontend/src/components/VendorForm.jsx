@@ -81,13 +81,13 @@ const VendorForm = ({ vendor = null, onSave, onCancel }) => {
     try {
       let result;
       if (vendor) {
-        result = await mockAPI.updateVendor(vendor.id, formData);
+        result = await vendorAPI.updateVendor(vendor.id, formData);
         toast({
           title: "Success",
           description: "Vendor updated successfully"
         });
       } else {
-        result = await mockAPI.createVendor(formData);
+        result = await vendorAPI.createVendor(formData);
         toast({
           title: "Success",
           description: "Vendor created successfully"
