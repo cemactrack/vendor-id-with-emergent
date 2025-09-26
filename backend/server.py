@@ -477,15 +477,16 @@ async def approve_document(
                 
                 # If verification is complete, generate Vendor ID
                 if summary.get("verification_complete"):
-                    # Get vendor profile for country info
+                    # Get vendor profile for country info (document["vendor_id"] is actually user_id)
                     vendor_profile = await ecosystem_service.vendors_collection.find_one({
-                        "vendor_id": document["vendor_id"]
+                        "user_id": document["vendor_id"]
                     })
                     
                     if vendor_profile:
                         country = vendor_profile.get("country", "US")
+                        # Use the actual vendor_id from the profile, not the user_id
                         success_id, vendor_id_number, msg = await vendor_id_service.generate_vendor_id(
-                            document["vendor_id"], 
+                            vendor_profile["vendor_id"], 
                             country
                         )
                         
