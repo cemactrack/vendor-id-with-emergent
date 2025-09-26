@@ -15,7 +15,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { mockAPI } from '../data/mock';
+import { vendorAPI } from '../services/api';
 import VendorForm from './VendorForm';
 import VendorCard from './VendorCard';
 
