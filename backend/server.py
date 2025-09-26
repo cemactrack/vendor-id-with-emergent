@@ -55,6 +55,7 @@ vendor_id_service = VendorIDService(db)
 qr_barcode_service = QRBarcodeService()
 upload_service = UploadService()
 template_service = TemplateService()
+ocr_service = DocumentOCRService(mongo_url)
 
 # Security
 security = HTTPBearer()
