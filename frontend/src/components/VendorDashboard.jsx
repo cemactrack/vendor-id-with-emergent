@@ -40,7 +40,7 @@ const VendorDashboard = () => {
 
   const loadVendors = async () => {
     try {
-      const data = await mockAPI.getVendors();
+      const data = await vendorAPI.getVendors();
       setVendors(data);
     } catch (error) {
       toast({
