@@ -319,7 +319,13 @@ class VendorEcosystemService:
             {"status": {"$in": [VerificationStatus.PENDING, VerificationStatus.UNDER_REVIEW]}}
         ).limit(limit).to_list(None)
         
-        return [VerificationRequest(**{**v, "id": v.pop("_id", v.get("id"))}) for v in verifications]
+        result = []
+        for v in verifications:
+            # Convert ObjectId to string
+            v_dict = dict(v)
+            v_dict["id"] = str(v_dict.pop("_id", v_dict.get("id", "")))
+            result.append(VerificationRequest(**v_dict))
+        return result
     
     async def update_verification_status(self, verification_id: str, status: VerificationStatus, 
                                        officer_id: str, notes: Optional[str] = None) -> bool:
