@@ -449,7 +449,7 @@ class DocumentOCRService:
                 'validation_timestamp': datetime.now(timezone.utc),
                 'expected_fields': expected_fields,
                 'field_validations': validation_results,
-                'overall_validation_score': float(overall_validation_score),
+                'overall_validation_score': overall_validation_score,
                 'validation_passed': bool(overall_validation_score > 0.7)  # Convert numpy bool to Python bool
             }
             
