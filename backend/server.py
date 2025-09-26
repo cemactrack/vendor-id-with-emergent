@@ -94,22 +94,6 @@ async def root():
     }
 
 # Authentication Endpoints
-@auth_router.post("/register")
-async def register_user(user_data: UserCreate):
-    """Register new user"""
-    try:
-        user = await ecosystem_service.create_user(user_data)
-        token = ecosystem_service.generate_jwt_token(user)
-        return {
-            "user": user,
-            "token": token,
-            "message": "User registered successfully"
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Registration failed")
-
 @auth_router.post("/login")
 async def login_user(email: str, password: str, totp_token: Optional[str] = None, backup_code: Optional[str] = None):
     """Enhanced user login with 2FA support"""
