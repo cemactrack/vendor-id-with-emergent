@@ -89,7 +89,7 @@ const VendorDashboard = () => {
   const handleDeleteVendor = async (vendorId) => {
     if (window.confirm('Are you sure you want to delete this vendor?')) {
       try {
-        await mockAPI.deleteVendor(vendorId);
+        await vendorAPI.deleteVendor(vendorId);
         toast({
           title: "Success",
           description: "Vendor deleted successfully"
