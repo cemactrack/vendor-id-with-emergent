@@ -469,9 +469,9 @@ class DocumentOCRService:
         return {
             'field_name': field_name,
             'expected_value': expected_value,
-            'found_in_text': contains_value,
+            'found_in_text': bool(contains_value),  # Convert numpy bool to Python bool
             'match_score': float(similarity),
-            'validation_passed': similarity > 0.7 or contains_value
+            'validation_passed': bool(similarity > 0.7 or contains_value)  # Convert numpy bool to Python bool
         }
     
     async def get_vendor_ocr_summary(self, vendor_id: str) -> Dict[str, Any]:
