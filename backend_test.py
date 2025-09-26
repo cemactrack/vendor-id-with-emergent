@@ -341,14 +341,14 @@ class VendorEcosystemTester:
             response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
             
             if response.status_code == 200:
-                data = response.json()
-                if "document" in data:
-                    document = data["document"]
+                response_data = response.json()
+                if "document_id" in response_data:
+                    document_id = response_data["document_id"]
                     self.log_test("Document Upload", True, "Document uploaded successfully", 
-                                {"document_id": document["id"], "type": document["document_type"]})
+                                {"document_id": document_id})
                     return True
                 else:
-                    self.log_test("Document Upload", False, "Missing document in response", data)
+                    self.log_test("Document Upload", False, "Missing document_id in response", response_data)
                     return False
             else:
                 self.log_test("Document Upload", False, f"Document upload failed: {response.text}")
