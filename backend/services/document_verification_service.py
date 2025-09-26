@@ -4,10 +4,16 @@ from typing import Dict, List, Optional, Tuple
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timedelta
 import logging
-from PIL import Image
-import pytesseract
 import hashlib
 import re
+
+# Optional imports for OCR - will use mock if not available
+try:
+    from PIL import Image
+    import pytesseract
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
