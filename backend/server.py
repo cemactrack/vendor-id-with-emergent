@@ -17,8 +17,10 @@ from datetime import datetime
 # Import models and services
 from models.vendor import VendorCreate, VendorUpdate, VendorResponse, VendorsResponse
 from models.vendor_ecosystem import *
+from models.auth_models import *
 from services.vendor_service import VendorService
 from services.vendor_ecosystem_service import VendorEcosystemService
+from services.auth_enhancement_service import AuthEnhancementService
 from services.qr_barcode_service import QRBarcodeService
 from services.upload_service import UploadService
 from services.template_service import TemplateService
