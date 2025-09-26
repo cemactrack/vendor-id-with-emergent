@@ -144,6 +144,44 @@ export const vendorEcosystemAPI = {
     const response = await apiClient.get('/vendors/documents/summary');
     return response.summary;
   },
+
+  // Admin Document Review Endpoints
+  getVerificationQueue: async (limit = 50) => {
+    const response = await apiClient.get(`/admin/verification-queue?limit=${limit}`);
+    return response.queue;
+  },
+
+  getDocumentForReview: async (documentId) => {
+    const response = await apiClient.get(`/admin/documents/${documentId}/review`);
+    return response;
+  },
+
+  approveDocument: async (documentId, notes = '') => {
+    const response = await apiClient.post(`/admin/documents/${documentId}/approve`, null, {
+      params: { notes }
+    });
+    return response;
+  },
+
+  rejectDocument: async (documentId, reason) => {
+    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, null, {
+      params: { reason }
+    });
+    return response;
+  },
+
+  // Vendor ID Management
+  getVendorIdInfo: async () => {
+    const response = await apiClient.get('/vendors/vendor-id');
+    return response.vendor_id;
+  },
+
+  requestPhysicalCard: async (shippingAddress) => {
+    const response = await apiClient.post('/vendors/vendor-id/request-physical-card', {
+      shipping_address: shippingAddress
+    });
+    return response;
+  },
   createVendorProfile: async (profileData) => {
     const response = await apiClient.post('/vendors/profile', profileData);
     return response.profile;
