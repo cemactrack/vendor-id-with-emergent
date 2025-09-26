@@ -522,7 +522,6 @@ const VendorOnboarding = () => {
                 </Button>
               ) : (
                 <Button
-                  type="button"
                   onClick={handleSubmit}
                   disabled={loading}
                   className="flex items-center bg-emerald-600 hover:bg-emerald-700"
@@ -530,11 +529,11 @@ const VendorOnboarding = () => {
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating Profile...
+                      Submitting Profile...
                     </>
                   ) : (
                     <>
-                      Create Profile
+                      Submit for Verification
                       <CheckCircle className="w-4 h-4 ml-2" />
                     </>
                   )}
