@@ -390,6 +390,197 @@ async def get_vendor_verification_summary(current_user: dict = Depends(get_curre
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch verification summary")
 
+# Admin Document Review Endpoints
+@admin_router.get("/verification-queue")
+async def get_verification_queue(
+    limit: int = Query(50, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get documents pending verification"""
+    try:
+        # Check admin permissions
+        if current_user.get("role") not in ["verification_officer", "admin"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        queue = await document_service.get_verification_queue(limit)
+        return {"queue": queue}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch verification queue")
+
+@admin_router.get("/documents/{document_id}/review")
+async def get_document_for_review(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get document details for review"""
+    try:
+        # Check admin permissions
+        if current_user.get("role") not in ["verification_officer", "admin"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        # Get document details
+        document = await document_service.documents_collection.find_one({
+            "document_id": document_id
+        })
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Get vendor profile
+        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+            "vendor_id": document["vendor_id"]
+        })
+        
+        # Remove sensitive data
+        document.pop("_id", None)
+        document.pop("file_path", None)
+        document.pop("file_hash", None)
+        
+        if vendor_profile:
+            vendor_profile.pop("_id", None)
+        
+        return {
+            "document": document,
+            "vendor": vendor_profile
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to get document for review")
+
+@admin_router.post("/documents/{document_id}/approve")
+async def approve_document(
+    document_id: str,
+    notes: str = "",
+    current_user: dict = Depends(get_current_user)
+):
+    """Approve a document"""
+    try:
+        # Check admin permissions
+        if current_user.get("role") not in ["verification_officer", "admin"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        success, message = await document_service.approve_document(
+            document_id, 
+            current_user["user_id"], 
+            notes
+        )
+        
+        if success:
+            # Check if all required documents are approved for this vendor
+            document = await document_service.documents_collection.find_one({
+                "document_id": document_id
+            })
+            
+            if document:
+                summary = await document_service.get_vendor_verification_summary(
+                    document["vendor_id"]
+                )
+                
+                # If verification is complete, generate Vendor ID
+                if summary.get("verification_complete"):
+                    # Get vendor profile for country info
+                    vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+                        "vendor_id": document["vendor_id"]
+                    })
+                    
+                    if vendor_profile:
+                        country = vendor_profile.get("country", "US")
+                        success, vendor_id_number, msg = await vendor_id_service.generate_vendor_id(
+                            document["vendor_id"], 
+                            country
+                        )
+                        
+                        if success:
+                            message += f" Vendor ID {vendor_id_number} has been generated."
+            
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to approve document")
+
+@admin_router.post("/documents/{document_id}/reject")
+async def reject_document(
+    document_id: str,
+    reason: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Reject a document"""
+    try:
+        # Check admin permissions
+        if current_user.get("role") not in ["verification_officer", "admin"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        if not reason.strip():
+            raise HTTPException(status_code=400, detail="Rejection reason is required")
+        
+        success, message = await document_service.reject_document(
+            document_id, 
+            current_user["user_id"], 
+            reason
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to reject document")
+
+# Vendor ID Management Endpoints
+@vendor_router.get("/vendor-id")
+async def get_vendor_id_info(current_user: dict = Depends(get_current_user)):
+    """Get vendor ID information for current user"""
+    try:
+        # Get vendor profile
+        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+            "user_id": current_user["user_id"]
+        })
+        
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        if vendor_profile.get("vendor_id_number"):
+            vendor_id_info = await vendor_id_service.get_vendor_id_info(
+                vendor_profile["vendor_id_number"]
+            )
+            return {"vendor_id": vendor_id_info}
+        else:
+            return {"vendor_id": None, "message": "Vendor ID not yet assigned"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to get vendor ID information")
+
+@vendor_router.post("/vendor-id/request-physical-card")
+async def request_physical_card(
+    shipping_address: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Request physical vendor ID card"""
+    try:
+        # Get vendor profile
+        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+            "user_id": current_user["user_id"]
+        })
+        
+        if not vendor_profile or not vendor_profile.get("vendor_id_number"):
+            raise HTTPException(status_code=400, detail="Vendor ID not assigned yet")
+        
+        success, message = await vendor_id_service.request_physical_card(
+            vendor_profile["vendor_id_number"],
+            shipping_address
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to request physical card")
+
 # Service Listings Endpoints
 @vendor_router.post("/listings")
 async def create_service_listing(listing_data: ServiceListingCreate, current_user: dict = Depends(get_current_user)):
