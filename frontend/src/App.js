@@ -87,8 +87,8 @@ const AppContent = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/search" element={<PublicVendorSearch />} />
-        <Route path="/verify/:vendorId" element={<PublicVendorVerification />} />
+        <Route path="/search" element={<Layout><PublicVendorSearch /></Layout>} />
+        <Route path="/verify/:vendorId" element={<Layout><PublicVendorVerification /></Layout>} />
         
         {/* Authentication Routes */}
         <Route 
