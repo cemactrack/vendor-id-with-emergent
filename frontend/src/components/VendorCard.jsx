@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { RotateCcw, Printer, Download } from 'lucide-react';
-import { generateQRCode, generateBarcode } from '../data/mock';
+import { vendorAPI } from '../services/api';
 
 const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
   const [imageError, setImageError] = useState(false);
