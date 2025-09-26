@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional
 # Configuration
 BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
 TEST_USER_EMAIL = "testvendor@example.com"
-TEST_USER_PASSWORD = "SecurePass123"
+TEST_USER_PASSWORD = "Pass123"
 TEST_ADMIN_EMAIL = "admin@vendorsecure.com"
 TEST_ADMIN_PASSWORD = "AdminPass123"
 
