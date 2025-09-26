@@ -723,6 +723,142 @@ async def get_ecosystem_stats(current_user: dict = Depends(require_role(UserRole
     stats = await ecosystem_service.get_ecosystem_stats()
     return {"stats": stats}
 
+# ===== OCR ENDPOINTS =====
+
+@vendor_router.post("/documents/{document_id}/ocr/process")
+async def process_document_ocr(
+    document_id: str,
+    document_type: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Process document with OCR for text extraction"""
+    try:
+        vendor_id = current_user.get("vendor_id", current_user["user_id"])
+        
+        # Validate file type
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File name is required")
+        
+        file_ext = file.filename.lower().split('.')[-1]
+        if file_ext not in ['pdf', 'png', 'jpg', 'jpeg']:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unsupported file type: {file_ext}. Supported: PDF, PNG, JPG, JPEG"
+            )
+        
+        # Read file content
+        file_content = await file.read()
+        
+        if len(file_content) > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
+        
+        # Process with OCR
+        result = await ocr_service.process_document_for_vendor(
+            vendor_id=vendor_id,
+            document_id=document_id,
+            file_content=file_content,
+            file_type=file_ext,
+            document_type=document_type
+        )
+        
+        return {
+            "message": "OCR processing completed successfully",
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"OCR processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
+
+@vendor_router.get("/documents/{document_id}/ocr/results")
+async def get_document_ocr_results(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get OCR results for a document"""
+    try:
+        vendor_id = current_user.get("vendor_id", current_user["user_id"])
+        
+        results = await ocr_service.get_document_ocr_results(vendor_id, document_id)
+        
+        if not results:
+            raise HTTPException(status_code=404, detail="OCR results not found")
+        
+        return {"ocr_results": results}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving OCR results: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve OCR results")
+
+@vendor_router.post("/documents/{document_id}/ocr/validate")
+async def validate_document_ocr(
+    document_id: str,
+    validation_request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Validate OCR extracted data against expected values"""
+    try:
+        vendor_id = current_user.get("vendor_id", current_user["user_id"])
+        
+        expected_fields = validation_request.get("expected_fields", {})
+        
+        if not expected_fields:
+            raise HTTPException(status_code=400, detail="Expected fields are required for validation")
+        
+        validation_results = await ocr_service.validate_extracted_data(
+            vendor_id=vendor_id,
+            document_id=document_id,
+            expected_fields=expected_fields
+        )
+        
+        return {
+            "message": "Document validation completed",
+            "validation_results": validation_results
+        }
+        
+    except Exception as e:
+        logger.error(f"OCR validation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+
+@vendor_router.get("/ocr/summary")
+async def get_vendor_ocr_summary(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get OCR processing summary for current vendor"""
+    try:
+        vendor_id = current_user.get("vendor_id", current_user["user_id"])
+        
+        summary = await ocr_service.get_vendor_ocr_summary(vendor_id)
+        
+        return {"ocr_summary": summary}
+        
+    except Exception as e:
+        logger.error(f"Error generating OCR summary: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate OCR summary")
+
+@admin_router.get("/ocr/results/{processing_id}")
+async def admin_get_ocr_results(
+    processing_id: str,
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Admin endpoint to get OCR results by processing ID"""
+    try:
+        results = await ocr_service.get_ocr_results(processing_id)
+        
+        if not results:
+            raise HTTPException(status_code=404, detail="OCR results not found")
+        
+        return {"ocr_results": results}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Admin OCR results error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve OCR results")
+
 # Legacy endpoints for backward compatibility
 @api_router.get("/vendors", response_model=VendorsResponse)
 async def get_legacy_vendors(
