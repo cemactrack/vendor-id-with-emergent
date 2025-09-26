@@ -50,7 +50,7 @@ const PublicVendorSearch = () => {
   ];
 
   const countries = [
-    { value: '', label: 'All Countries' },
+    { value: 'all', label: 'All Countries' },
     { value: 'NG', label: 'Nigeria' },
     { value: 'CM', label: 'Cameroon' },
     { value: 'GH', label: 'Ghana' },
