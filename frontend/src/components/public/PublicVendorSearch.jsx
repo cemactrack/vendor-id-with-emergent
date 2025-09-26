@@ -71,8 +71,8 @@ const PublicVendorSearch = () => {
       const offset = (currentPage - 1) * itemsPerPage;
       const response = await vendorEcosystemAPI.publicVendorSearch(
         searchQuery,
-        selectedCategory || null,
-        selectedCountry || null,
+        selectedCategory === 'all' ? null : selectedCategory,
+        selectedCountry === 'all' ? null : selectedCountry,
         verifiedOnly,
         itemsPerPage,
         offset
