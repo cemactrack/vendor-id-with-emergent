@@ -30,6 +30,8 @@ class VendorEcosystemService:
         self.verification_actions_collection = db.verification_actions
         
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Use direct bcrypt as fallback for compatibility issues
+        self.use_direct_bcrypt = True
         self.jwt_secret = os.getenv("JWT_SECRET", "fallback-secret-key")
     
     # User Management
