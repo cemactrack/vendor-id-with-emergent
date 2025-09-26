@@ -28,7 +28,7 @@ const VendorForm = ({ vendor = null, onSave, onCancel }) => {
     }));
   };
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -40,16 +40,33 @@ const VendorForm = ({ vendor = null, onSave, onCancel }) => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const photoUrl = e.target.result;
+      try {
+        setIsSubmitting(true);
+        toast({
+          title: "Uploading...",
+          description: "Processing your image"
+        });
+
+        const photoUrl = await vendorAPI.uploadPhoto(file);
         setPhotoPreview(photoUrl);
         setFormData(prev => ({
           ...prev,
           photo: photoUrl
         }));
-      };
-      reader.readAsDataURL(file);
+
+        toast({
+          title: "Success",
+          description: "Photo uploaded successfully"
+        });
+      } catch (error) {
+        toast({
+          title: "Upload failed",
+          description: error.response?.data?.detail || "Failed to upload photo",
+          variant: "destructive"
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
