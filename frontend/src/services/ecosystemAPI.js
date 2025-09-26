@@ -381,5 +381,51 @@ export const vendorEcosystemAPI = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  // ===== OCR ENDPOINTS =====
+  
+  // Process document with OCR
+  processDocumentOCR: async (documentId, documentType, file) => {
+    const formData = new FormData();
+    formData.append('document_type', documentType);
+    if (file) {
+      formData.append('file', file);
+    }
+    
+    const response = await axios.post(`${API}/vendors/documents/${documentId}/ocr/process`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': authToken ? `Bearer ${authToken}` : undefined
+      },
+      timeout: 120000, // OCR processing can take time
+    });
+    return response.data.result;
+  },
+
+  // Get OCR results for a document
+  getDocumentOCRResults: async (documentId) => {
+    const response = await apiClient.get(`/vendors/documents/${documentId}/ocr/results`);
+    return response.ocr_results;
+  },
+
+  // Validate OCR extracted data
+  validateDocumentOCR: async (documentId, expectedFields) => {
+    const response = await apiClient.post(`/vendors/documents/${documentId}/ocr/validate`, {
+      expected_fields: expectedFields
+    });
+    return response.validation_results;
+  },
+
+  // Get OCR processing summary for vendor
+  getOCRSummary: async () => {
+    const response = await apiClient.get('/vendors/ocr/summary');
+    return response.ocr_summary;
+  },
+
+  // Admin: Get OCR results by processing ID
+  getOCRResultsByProcessingId: async (processingId) => {
+    const response = await apiClient.get(`/admin/ocr/results/${processingId}`);
+    return response.ocr_results;
   }
 };
