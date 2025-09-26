@@ -305,7 +305,7 @@ class DocumentOCRService:
             processing_time = (end_time - start_time).total_seconds()
             
             # Calculate overall metrics
-            overall_confidence = np.mean([page['overall_confidence'] for page in ocr_results])
+            overall_confidence = float(np.mean([page['overall_confidence'] for page in ocr_results]))
             total_words = sum([page['word_count'] for page in ocr_results])
             combined_text = '\n\n'.join([page['text'] for page in ocr_results])
             
