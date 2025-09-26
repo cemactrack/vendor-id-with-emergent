@@ -82,7 +82,9 @@ const VendorOnboarding = () => {
   const steps = [
     { number: 1, title: 'Business Information', description: 'Tell us about your business' },
     { number: 2, title: 'Business Details', description: 'Additional business information' },
-    { number: 3, title: 'Review & Submit', description: 'Verify your information' }
+    { number: 3, title: 'Document Upload', description: 'Upload verification documents' },
+    { number: 4, title: 'Review & Submit', description: 'Verify your information' },
+    { number: 5, title: 'Verification Process', description: 'Awaiting approval' }
   ];
 
   const getProgress = () => (currentStep / steps.length) * 100;
