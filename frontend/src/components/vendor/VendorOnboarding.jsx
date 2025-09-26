@@ -152,11 +152,11 @@ const VendorOnboarding = () => {
       };
 
       await vendorEcosystemAPI.createVendorProfile(profileData);
-      setSuccess('Vendor profile created successfully! Redirecting to dashboard...');
       
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // Move to verification process step
+      setCurrentStep(5);
+      setSuccess('Vendor profile submitted successfully! Your documents are now under review.');
+      
     } catch (error) {
       setError(error.response?.data?.detail || 'Failed to create vendor profile');
     } finally {
