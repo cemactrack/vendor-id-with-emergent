@@ -136,7 +136,7 @@ class VendorIDService:
         """Generate QR code for vendor ID"""
         try:
             # Create verification URL
-            verification_url = f"https://vendorsecure.preview.emergentagent.com/verify/{vendor_id_number}"
+            verification_url = f"https://idecosystem.preview.emergentagent.com/verify/{vendor_id_number}"
             
             # Generate QR code
             qr = qrcode.QRCode(

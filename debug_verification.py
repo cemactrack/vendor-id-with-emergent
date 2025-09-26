@@ -6,7 +6,7 @@ Debug Verification Status
 import requests
 import json
 
-BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
+BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
 TEST_VENDOR_EMAIL = "complete-test@example.com"
 TEST_VENDOR_PASSWORD = "CompleteTest123!"
 TEST_ADMIN_EMAIL = "admin.test@vendorsecure.com"

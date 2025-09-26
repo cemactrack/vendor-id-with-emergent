@@ -36,7 +36,7 @@ class EmailService:
             
         try:
             subject = "Verify Your Vendor Ecosystem Account"
-            verification_url = f"{os.getenv('FRONTEND_URL', 'https://vendorsecure.preview.emergentagent.com')}/verify-email?token={token}"
+            verification_url = f"{os.getenv('FRONTEND_URL', 'https://idecosystem.preview.emergentagent.com')}/verify-email?token={token}"
             
             body = f"""
             <html>
@@ -95,7 +95,7 @@ class EmailService:
             
         try:
             subject = "Reset Your Password - Vendor Ecosystem"
-            reset_url = f"{os.getenv('FRONTEND_URL', 'https://vendorsecure.preview.emergentagent.com')}/reset-password?token={token}"
+            reset_url = f"{os.getenv('FRONTEND_URL', 'https://idecosystem.preview.emergentagent.com')}/reset-password?token={token}"
             
             body = f"""
             <html>

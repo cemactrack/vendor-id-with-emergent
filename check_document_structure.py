@@ -6,7 +6,7 @@ Check Document Structure
 import requests
 import json
 
-BACKEND_URL = "https://vendorsecure.preview.emergentagent.com/api"
+BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
 TEST_ADMIN_EMAIL = "admin.test@vendorsecure.com"
 TEST_ADMIN_PASSWORD = "AdminTest123!"
 
