@@ -313,16 +313,82 @@ async def get_vendor_profile(vendor_id: str):
 @vendor_router.get("/dashboard")
 async def get_vendor_dashboard(current_user: dict = Depends(get_current_user)):
     """Get vendor dashboard data"""
-    # Get vendor profile for current user
-    vendor_doc = await db.vendor_profiles.find_one({"user_id": current_user["user_id"]})
-    if not vendor_doc:
-        raise HTTPException(status_code=404, detail="Vendor profile not found")
-    
-    dashboard_data = await ecosystem_service.get_vendor_dashboard_data(vendor_doc["vendor_id"])
-    if not dashboard_data:
-        raise HTTPException(status_code=404, detail="Dashboard data not found")
-    
-    return {"dashboard": dashboard_data}
+    try:
+        dashboard_data = await ecosystem_service.get_vendor_dashboard(current_user["user_id"])
+        return dashboard_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch dashboard data")
+
+# Document Management Endpoints
+@vendor_router.post("/documents/upload")
+async def upload_vendor_document(
+    file: UploadFile = File(...),
+    document_type: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload vendor verification document"""
+    try:
+        # Read file data
+        file_data = await file.read()
+        
+        # Save document
+        success, document_id, message = await document_service.save_uploaded_document(
+            current_user["user_id"],
+            file_data,
+            file.filename,
+            document_type
+        )
+        
+        if success:
+            return {
+                "document_id": document_id,
+                "message": message
+            }
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload document: {str(e)}")
+
+@vendor_router.get("/documents")
+async def get_vendor_documents(current_user: dict = Depends(get_current_user)):
+    """Get all documents for current vendor"""
+    try:
+        documents = await document_service.get_vendor_documents(current_user["user_id"])
+        return {"documents": documents}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch documents")
+
+@vendor_router.delete("/documents/{document_id}")
+async def delete_vendor_document(
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a vendor document"""
+    try:
+        # Note: In production, you might want to add ownership verification
+        # For now, we'll implement a basic deletion
+        result = await document_service.documents_collection.delete_one({
+            "document_id": document_id,
+            "vendor_id": current_user["user_id"]
+        })
+        
+        if result.deleted_count > 0:
+            return {"message": "Document deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Document not found")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to delete document")
+
+@vendor_router.get("/documents/summary")
+async def get_vendor_verification_summary(current_user: dict = Depends(get_current_user)):
+    """Get verification summary for current vendor"""
+    try:
+        summary = await document_service.get_vendor_verification_summary(current_user["user_id"])
+        return {"summary": summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch verification summary")
 
 # Document Management Endpoints
 @vendor_router.post("/documents")
