@@ -450,7 +450,6 @@ async def get_document_for_review(
 @admin_router.post("/documents/{document_id}/approve")
 async def approve_document(
     document_id: str,
-    request_data: dict = {},
     current_user: dict = Depends(get_current_user)
 ):
     """Approve a document"""
@@ -459,12 +458,10 @@ async def approve_document(
         if current_user.get("role") not in ["verification_officer", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         
-        notes = request_data.get("notes", "") if request_data else ""
-        
         success, message = await document_service.approve_document(
             document_id, 
             current_user["user_id"], 
-            notes
+            ""
         )
         
         if success:
@@ -487,12 +484,12 @@ async def approve_document(
                     
                     if vendor_profile:
                         country = vendor_profile.get("country", "US")
-                        success, vendor_id_number, msg = await vendor_id_service.generate_vendor_id(
+                        success_id, vendor_id_number, msg = await vendor_id_service.generate_vendor_id(
                             document["vendor_id"], 
                             country
                         )
                         
-                        if success:
+                        if success_id:
                             message += f" Vendor ID {vendor_id_number} has been generated."
             
             return {"message": message}
@@ -500,12 +497,13 @@ async def approve_document(
             raise HTTPException(status_code=400, detail=message)
             
     except Exception as e:
+        logger.error(f"Failed to approve document: {e}")
         raise HTTPException(status_code=500, detail="Failed to approve document")
 
 @admin_router.post("/documents/{document_id}/reject")
 async def reject_document(
     document_id: str,
-    request_data: dict,
+    reason: str = Form(...),
     current_user: dict = Depends(get_current_user)
 ):
     """Reject a document"""
@@ -514,7 +512,6 @@ async def reject_document(
         if current_user.get("role") not in ["verification_officer", "admin"]:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         
-        reason = request_data.get("reason", "")
         if not reason.strip():
             raise HTTPException(status_code=400, detail="Rejection reason is required")
         
@@ -530,6 +527,7 @@ async def reject_document(
             raise HTTPException(status_code=400, detail=message)
             
     except Exception as e:
+        logger.error(f"Failed to reject document: {e}")
         raise HTTPException(status_code=500, detail="Failed to reject document")
 
 # Vendor ID Management Endpoints
