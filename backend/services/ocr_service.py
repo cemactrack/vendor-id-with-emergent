@@ -439,7 +439,7 @@ class DocumentOCRService:
                 if 'match_score' in result
             ]
             
-            overall_validation_score = np.mean(field_scores) if field_scores else 0
+            overall_validation_score = float(np.mean(field_scores)) if field_scores else 0.0
             
             validation_record = {
                 'validation_id': str(uuid.uuid4()),
