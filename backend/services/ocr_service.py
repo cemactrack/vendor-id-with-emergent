@@ -348,7 +348,7 @@ class DocumentOCRService:
             return {
                 'processing_id': processing_id,
                 'status': 'success',
-                'overall_confidence': float(overall_confidence),
+                'overall_confidence': overall_confidence,
                 'total_words': total_words,
                 'page_count': len(ocr_results),
                 'processing_time': processing_time,
