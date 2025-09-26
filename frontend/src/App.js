@@ -22,6 +22,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import VendorOnboarding from "./components/vendor/VendorOnboarding";
 import DocumentUpload from "./components/vendor/DocumentUpload";
 import VendorIDCard from "./components/vendor/VendorIDCard";
+import OCRProcessing from "./components/vendor/OCRProcessing";
 import DocumentReview from "./components/admin/DocumentReview";
 import VerificationQueue from "./components/admin/VerificationQueue";
 
