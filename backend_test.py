@@ -160,13 +160,10 @@ class VendorEcosystemTester:
     def test_user_login(self):
         """Test user login endpoint"""
         try:
-            # Test vendor login
-            login_data = {
-                "email": TEST_USER_EMAIL,
-                "password": TEST_USER_PASSWORD
-            }
+            # Test vendor login using form data
+            url = f"{self.base_url}/auth/login?email={TEST_USER_EMAIL}&password={TEST_USER_PASSWORD}"
             
-            response = self.make_request("POST", "/auth/login", login_data)
+            response = requests.post(url, headers={"Content-Type": "application/json"}, timeout=30)
             
             if response.status_code == 200:
                 data = response.json()
