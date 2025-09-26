@@ -30,6 +30,8 @@ class VendorEcosystemTester:
         self.admin_token = None
         self.vendor_id = None
         self.test_results = []
+        self.test_document_id = None
+        self.ocr_processing_id = None
         
     def log_test(self, test_name: str, success: bool, message: str, details: Dict[str, Any] = None):
         """Log test result"""
