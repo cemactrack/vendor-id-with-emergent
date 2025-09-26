@@ -878,8 +878,8 @@ class VendorEcosystemTester:
     
     def run_all_tests(self):
         """Run all backend tests"""
-        print("🚀 Starting Vendor Ecosystem Backend API Tests")
-        print("=" * 60)
+        print("🚀 Starting Vendor Ecosystem Backend API Tests with OCR Integration")
+        print("=" * 70)
         
         # Health check
         self.test_health_check()
@@ -897,6 +897,17 @@ class VendorEcosystemTester:
         # Document management tests
         self.test_document_upload()
         self.test_document_listing()
+        
+        # OCR Integration Tests
+        print("\n📄 Starting OCR Integration Tests")
+        print("-" * 40)
+        self.upload_test_document_for_ocr()
+        self.test_ocr_document_processing()
+        self.test_ocr_results_retrieval()
+        self.test_ocr_data_validation()
+        self.test_vendor_ocr_summary()
+        self.test_admin_ocr_results()
+        self.test_ocr_error_handling()
         
         # Admin functionality tests
         self.test_admin_stats()
