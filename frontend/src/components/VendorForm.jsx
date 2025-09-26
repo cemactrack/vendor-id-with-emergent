@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Upload, X, User, Calendar, Hash } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { mockAPI } from '../data/mock';
+import { vendorAPI } from '../services/api';
 
 const VendorForm = ({ vendor = null, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
