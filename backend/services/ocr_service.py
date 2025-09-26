@@ -398,6 +398,9 @@ class DocumentOCRService:
                     'status': 'completed'
                 }
             )
+            if result:
+                # Remove MongoDB ObjectId to avoid serialization issues
+                result.pop('_id', None)
             return result
         except Exception as e:
             self.logger.error(f"Error retrieving document OCR results: {str(e)}")
