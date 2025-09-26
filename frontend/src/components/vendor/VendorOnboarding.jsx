@@ -631,14 +631,14 @@ const VendorOnboarding = () => {
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 || currentStep === 5}
                 className="flex items-center"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Previous
               </Button>
 
-              {currentStep < steps.length ? (
+              {currentStep < 3 ? (
                 <Button
                   type="button"
                   onClick={nextStep}
@@ -647,7 +647,17 @@ const VendorOnboarding = () => {
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-              ) : (
+              ) : currentStep === 3 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!documentsUploaded}
+                  className="flex items-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400"
+                >
+                  {documentsUploaded ? 'Continue to Review' : 'Upload Required Documents'}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : currentStep === 4 ? (
                 <Button
                   onClick={handleSubmit}
                   disabled={loading}
@@ -665,7 +675,7 @@ const VendorOnboarding = () => {
                     </>
                   )}
                 </Button>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </Card>
