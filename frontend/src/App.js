@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import EnhancedVendorDashboard from "./components/EnhancedVendorDashboard";
+import ResponsiveVendorDashboard from "./components/ResponsiveVendorDashboard";
 import { Toaster } from "./components/ui/toaster";
 
 function App() {
