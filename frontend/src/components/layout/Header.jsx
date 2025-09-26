@@ -39,9 +39,9 @@ const Header = () => {
 
   const userNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: User },
-    { name: 'Profile', href: '/profile', icon: Settings },
-    { name: 'Security', href: '/security', icon: Lock },
-    { name: 'Help & Support', href: '/support', icon: HelpCircle }
+    { name: 'Documents', href: '/documents', icon: Eye },
+    { name: 'Security Settings', href: '/security-settings', icon: Lock },
+    { name: 'Help & Support', href: '/help', icon: HelpCircle }
   ];
 
   return (
