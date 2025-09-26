@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { vendorEcosystemAPI } from '../../services/ecosystemAPI';
 import { Link } from 'react-router-dom';
+import Layout from '../layout/Layout';
 
 const PublicVendorSearch = () => {
   const [vendors, setVendors] = useState([]);
