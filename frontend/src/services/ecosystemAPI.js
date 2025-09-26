@@ -157,16 +157,14 @@ export const vendorEcosystemAPI = {
   },
 
   approveDocument: async (documentId, notes = '') => {
-    const response = await apiClient.post(`/admin/documents/${documentId}/approve`, null, {
-      params: { notes }
-    });
+    const response = await apiClient.post(`/admin/documents/${documentId}/approve`);
     return response;
   },
 
   rejectDocument: async (documentId, reason) => {
-    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, null, {
-      params: { reason }
-    });
+    const formData = new FormData();
+    formData.append('reason', reason);
+    const response = await apiClient.post(`/admin/documents/${documentId}/reject`, formData);
     return response;
   },
 
