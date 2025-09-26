@@ -1,15 +1,19 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Query, Response
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
-import uuid
-from datetime import datetime
+from typing import Optional
+from io import BytesIO
 
+# Import models and services
+from models.vendor import VendorCreate, VendorUpdate, VendorResponse, VendorsResponse
+from services.vendor_service import VendorService
+from services.qr_barcode_service import QRBarcodeService
+from services.upload_service import UploadService
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -20,37 +24,124 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(title="Vendor ID Management API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize services
+vendor_service = VendorService(db)
+qr_barcode_service = QRBarcodeService()
+upload_service = UploadService()
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
+# Health check endpoint
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Vendor ID Management API", "status": "active"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
+# Vendor endpoints
+@api_router.post("/vendors", response_model=VendorResponse)
+async def create_vendor(vendor_data: VendorCreate):
+    """Create a new vendor"""
+    try:
+        vendor = await vendor_service.create_vendor(vendor_data)
+        return VendorResponse(vendor=vendor, message="Vendor created successfully")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+@api_router.get("/vendors", response_model=VendorsResponse)
+async def get_vendors(
+    search: Optional[str] = Query(None, description="Search by name or ID"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(50, ge=1, le=100, description="Number of vendors to return"),
+    offset: int = Query(0, ge=0, description="Number of vendors to skip")
+):
+    """Get all vendors with optional filtering"""
+    try:
+        vendors, total = await vendor_service.get_vendors(search, status, limit, offset)
+        return VendorsResponse(vendors=vendors, total=total)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/vendors/{vendor_id}", response_model=VendorResponse)
+async def get_vendor(vendor_id: str):
+    """Get a specific vendor by ID"""
+    vendor = await vendor_service.get_vendor(vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return VendorResponse(vendor=vendor)
+
+@api_router.put("/vendors/{vendor_id}", response_model=VendorResponse)
+async def update_vendor(vendor_id: str, vendor_data: VendorUpdate):
+    """Update a vendor"""
+    try:
+        vendor = await vendor_service.update_vendor(vendor_id, vendor_data)
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+        return VendorResponse(vendor=vendor, message="Vendor updated successfully")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.delete("/vendors/{vendor_id}")
+async def delete_vendor(vendor_id: str):
+    """Delete a vendor"""
+    success = await vendor_service.delete_vendor(vendor_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return {"message": "Vendor deleted successfully"}
+
+# QR Code and Barcode endpoints
+@api_router.get("/qr-code/{vendor_id}")
+async def get_qr_code(vendor_id: str):
+    """Generate QR code for vendor"""
+    vendor = await vendor_service.get_vendor(vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    qr_image_bytes = qr_barcode_service.get_qr_code_image(vendor_id)
+    return StreamingResponse(BytesIO(qr_image_bytes), media_type="image/png")
+
+@api_router.get("/barcode/{vendor_id}")
+async def get_barcode(vendor_id: str):
+    """Generate barcode for vendor"""
+    vendor = await vendor_service.get_vendor(vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    barcode_image_bytes = qr_barcode_service.get_barcode_image(vendor_id)
+    return StreamingResponse(BytesIO(barcode_image_bytes), media_type="image/png")
+
+@api_router.get("/qr-code-base64/{vendor_id}")
+async def get_qr_code_base64(vendor_id: str):
+    """Get QR code as base64 string"""
+    vendor = await vendor_service.get_vendor(vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    qr_base64 = qr_barcode_service.generate_qr_code(vendor_id)
+    return {"qrCode": f"data:image/png;base64,{qr_base64}"}
+
+@api_router.get("/barcode-base64/{vendor_id}")
+async def get_barcode_base64(vendor_id: str):
+    """Get barcode as base64 string"""
+    vendor = await vendor_service.get_vendor(vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    barcode_base64 = qr_barcode_service.generate_barcode(vendor_id)
+    return {"barcode": f"data:image/png;base64,{barcode_base64}"}
+
+# Photo upload endpoint
+@api_router.post("/upload/photo")
+async def upload_photo(file: UploadFile = File(...)):
+    """Upload and process vendor photo"""
+    try:
+        photo_url = await upload_service.process_image(file)
+        return {"photoUrl": photo_url, "message": "Photo uploaded successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -58,7 +149,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
