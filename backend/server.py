@@ -21,6 +21,8 @@ from models.auth_models import *
 from services.vendor_service import VendorService
 from services.vendor_ecosystem_service import VendorEcosystemService
 from services.auth_enhancement_service import AuthEnhancementService
+from services.document_verification_service import DocumentVerificationService
+from services.vendor_id_service import VendorIDService
 from services.qr_barcode_service import QRBarcodeService
 from services.upload_service import UploadService
 from services.template_service import TemplateService
