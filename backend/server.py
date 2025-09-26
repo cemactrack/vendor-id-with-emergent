@@ -46,6 +46,7 @@ public_router = APIRouter(prefix="/api/public")
 # Initialize services
 vendor_service = VendorService(db)
 ecosystem_service = VendorEcosystemService(db)
+auth_service = AuthEnhancementService(db)
 qr_barcode_service = QRBarcodeService()
 upload_service = UploadService()
 template_service = TemplateService()
