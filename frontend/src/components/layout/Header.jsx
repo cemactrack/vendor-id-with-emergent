@@ -40,6 +40,7 @@ const Header = () => {
   const userNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: User },
     { name: 'Documents', href: '/documents', icon: Eye },
+    { name: 'OCR Processing', href: '/ocr-processing', icon: Search },
     { name: 'Security Settings', href: '/security-settings', icon: Lock },
     { name: 'Help & Support', href: '/help', icon: HelpCircle }
   ];
