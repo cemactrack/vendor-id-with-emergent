@@ -390,31 +390,6 @@ async def get_vendor_verification_summary(current_user: dict = Depends(get_curre
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch verification summary")
 
-# Document Management Endpoints
-@vendor_router.post("/documents")
-async def upload_document(document_data: DocumentCreate, current_user: dict = Depends(get_current_user)):
-    """Upload vendor document"""
-    # Get vendor ID for current user
-    vendor_doc = await db.vendor_profiles.find_one({"user_id": current_user["user_id"]})
-    if not vendor_doc:
-        raise HTTPException(status_code=404, detail="Vendor profile not found")
-    
-    try:
-        document = await ecosystem_service.upload_document(vendor_doc["vendor_id"], document_data)
-        return {"document": document, "message": "Document uploaded successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Document upload failed")
-
-@vendor_router.get("/documents")
-async def get_vendor_documents(current_user: dict = Depends(get_current_user)):
-    """Get vendor documents"""
-    vendor_doc = await db.vendor_profiles.find_one({"user_id": current_user["user_id"]})
-    if not vendor_doc:
-        raise HTTPException(status_code=404, detail="Vendor profile not found")
-    
-    documents = await ecosystem_service.get_vendor_documents(vendor_doc["vendor_id"])
-    return {"documents": documents}
-
 # Service Listings Endpoints
 @vendor_router.post("/listings")
 async def create_service_listing(listing_data: ServiceListingCreate, current_user: dict = Depends(get_current_user)):
