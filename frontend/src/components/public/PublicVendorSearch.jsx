@@ -32,7 +32,7 @@ const PublicVendorSearch = () => {
   const [itemsPerPage] = useState(12);
 
   const businessCategories = [
-    { value: '', label: 'All Categories' },
+    { value: 'all', label: 'All Categories' },
     { value: 'technology', label: 'Technology' },
     { value: 'manufacturing', label: 'Manufacturing' },
     { value: 'agriculture', label: 'Agriculture' },
