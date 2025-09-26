@@ -50,11 +50,74 @@ export const vendorEcosystemAPI = {
     return response;
   },
 
-  login: async (email, password) => {
-    const response = await apiClient.post('/auth/login', null, {
-      params: { email, password }
+  login: async (email, password, totpToken = null, backupCode = null) => {
+    const params = new URLSearchParams();
+    params.append('email', email);
+    params.append('password', password);
+    if (totpToken) params.append('totp_token', totpToken);
+    if (backupCode) params.append('backup_code', backupCode);
+    
+    const response = await apiClient.post('/auth/login', null, { params });
+    return response;
+  },
+
+  // Enhanced Authentication
+  verifyEmail: async (token) => {
+    const response = await apiClient.post('/auth/verify-email', { token });
+    return response;
+  },
+
+  resendEmailVerification: async () => {
+    const response = await apiClient.post('/auth/resend-verification');
+    return response;
+  },
+
+  forgotPassword: async (email) => {
+    const response = await apiClient.post('/auth/forgot-password', { email });
+    return response;
+  },
+
+  resetPassword: async (token, newPassword) => {
+    const response = await apiClient.post('/auth/reset-password', {
+      token,
+      new_password: newPassword
     });
     return response;
+  },
+
+  // Two-Factor Authentication
+  setup2FA: async (password) => {
+    const response = await apiClient.post('/auth/2fa/setup', { password });
+    return response;
+  },
+
+  enable2FA: async (token) => {
+    const response = await apiClient.post('/auth/2fa/enable', { token });
+    return response;
+  },
+
+  disable2FA: async (password, token = null) => {
+    const response = await apiClient.post('/auth/2fa/disable', {
+      password,
+      token
+    });
+    return response;
+  },
+
+  verify2FA: async (token) => {
+    const response = await apiClient.post('/auth/2fa/verify', { token });
+    return response;
+  },
+
+  // Security Management
+  getSecurityInfo: async () => {
+    const response = await apiClient.get('/auth/security/info');
+    return response.security;
+  },
+
+  getSecurityEvents: async (limit = 20) => {
+    const response = await apiClient.get(`/auth/security/events?limit=${limit}`);
+    return response.events;
   },
 
   // Vendor Profile Management
