@@ -456,6 +456,9 @@ class DocumentOCRService:
             # Store validation results
             await self.db.ocr_validation_results.insert_one(validation_record)
             
+            # Remove MongoDB ObjectId from the returned record to avoid serialization issues
+            validation_record.pop('_id', None)
+            
             return validation_record
             
         except Exception as e:
