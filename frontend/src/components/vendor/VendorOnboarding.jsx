@@ -432,6 +432,133 @@ const VendorOnboarding = () => {
           </div>
         );
 
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-10 h-10 text-emerald-600" />
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                Application Submitted Successfully!
+              </h3>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Your vendor application has been submitted and is now under review by our verification team.
+              </p>
+            </div>
+
+            {/* Status Timeline */}
+            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+              <CardContent className="pt-6">
+                <h4 className="font-semibold text-emerald-900 mb-4">What happens next?</h4>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-medium text-emerald-900">Document Review</p>
+                      <p className="text-sm text-emerald-700">Our team reviews your submitted documents (1-2 business days)</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Verification Checks</p>
+                      <p className="text-sm text-gray-600">Automated and manual verification of business details</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Vendor ID Assignment</p>
+                      <p className="text-sm text-gray-600">Unique Vendor ID generated and digital card created</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      4
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700">Profile Activation</p>
+                      <p className="text-sm text-gray-600">Full access to dashboard and marketplace features</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Next Steps */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center mb-4">
+                    <Award className="w-8 h-8 text-blue-600 mr-3" />
+                    <h4 className="font-semibold text-gray-900">Track Your Application</h4>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Monitor your verification progress and receive updates via email and dashboard notifications.
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/dashboard')}
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Go to Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center mb-4">
+                    <Shield className="w-8 h-8 text-green-600 mr-3" />
+                    <h4 className="font-semibold text-gray-900">Prepare for Launch</h4>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Learn how to maximize your vendor profile and integrate with marketplaces.
+                  </p>
+                  <Button variant="outline" className="w-full">
+                    View Tutorial
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Support Information */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="pt-6">
+                <h4 className="font-semibold text-blue-900 mb-3">Need Help?</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-blue-800">Email Support</p>
+                    <p className="text-blue-700">support@vendoreco.com</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">Phone Support</p>
+                    <p className="text-blue-700">+1 (555) 123-4567</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">Live Chat</p>
+                    <p className="text-blue-700">Available 9 AM - 6 PM EST</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">Help Center</p>
+                    <p className="text-blue-700">help.vendoreco.com</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return null;
     }
