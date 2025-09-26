@@ -315,6 +315,11 @@ const VendorEcosystemDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Vendor ID Tab */}
+          <TabsContent value="vendor-id">
+            <VendorIDCard />
+          </TabsContent>
+
           {/* Verification Tab */}
           <TabsContent value="verification" className="space-y-6">
             <Card>
