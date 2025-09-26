@@ -489,6 +489,392 @@ class VendorEcosystemTester:
         except Exception as e:
             self.log_test("Public Vendor Verification", False, f"Public verification error: {str(e)}")
             return False
+
+    def create_test_image_with_text(self, text: str, filename: str = "test_document.png") -> bytes:
+        """Create a test image with text for OCR testing"""
+        try:
+            # Create a white image
+            img = Image.new('RGB', (800, 600), color='white')
+            draw = ImageDraw.Draw(img)
+            
+            # Try to use a default font, fallback to basic if not available
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+            except:
+                font = ImageFont.load_default()
+            
+            # Add text to image
+            draw.text((50, 50), text, fill='black', font=font)
+            
+            # Convert to bytes
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format='PNG')
+            return img_bytes.getvalue()
+            
+        except Exception as e:
+            self.log_test("Create Test Image", False, f"Failed to create test image: {str(e)}")
+            # Return a minimal test image as fallback
+            img = Image.new('RGB', (400, 300), color='white')
+            draw = ImageDraw.Draw(img)
+            draw.text((10, 10), text, fill='black')
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format='PNG')
+            return img_bytes.getvalue()
+
+    def upload_test_document_for_ocr(self):
+        """Upload a test document to use for OCR testing"""
+        if not self.vendor_token:
+            self.log_test("Upload Test Document for OCR", False, "No vendor token available")
+            return False
+            
+        try:
+            # Create test document content
+            test_content = """
+            BUSINESS REGISTRATION CERTIFICATE
+            
+            Company Name: Test Vendor Business Ltd
+            Registration Number: RC123456789
+            Tax Identification Number: TIN987654321
+            Business Address: 123 Test Street, Lagos, Nigeria
+            Date of Incorporation: January 15, 2020
+            Business Category: Technology Services
+            
+            This certificate confirms that the above company is duly registered
+            and authorized to conduct business operations.
+            """
+            
+            # Create multipart form data for file upload
+            files = {
+                'file': ('business_registration.png', self.create_test_image_with_text(test_content), 'image/png')
+            }
+            data = {
+                'document_type': 'business_registration'
+            }
+            
+            url = f"{self.base_url}/vendors/documents/upload"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if "document_id" in response_data:
+                    self.test_document_id = response_data["document_id"]
+                    self.log_test("Upload Test Document for OCR", True, "Test document uploaded successfully", 
+                                {"document_id": self.test_document_id})
+                    return True
+                else:
+                    self.log_test("Upload Test Document for OCR", False, "Missing document_id in response", response_data)
+                    return False
+            else:
+                self.log_test("Upload Test Document for OCR", False, f"Document upload failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Upload Test Document for OCR", False, f"Document upload error: {str(e)}")
+            return False
+
+    def test_ocr_document_processing(self):
+        """Test OCR document processing endpoint"""
+        if not self.vendor_token:
+            self.log_test("OCR Document Processing", False, "No vendor token available")
+            return False
+            
+        if not self.test_document_id:
+            self.log_test("OCR Document Processing", False, "No test document ID available")
+            return False
+            
+        try:
+            # Create test document with business information
+            test_content = """
+            BUSINESS REGISTRATION CERTIFICATE
+            
+            Company Name: Test Vendor Business Ltd
+            Registration Number: RC123456789
+            Tax Identification Number: TIN987654321
+            Business Address: 123 Test Street, Lagos, Nigeria
+            Date of Incorporation: January 15, 2020
+            Business Category: Technology Services
+            Employee Count: 25 employees
+            
+            This certificate confirms that the above company is duly registered
+            and authorized to conduct business operations in Nigeria.
+            """
+            
+            # Create multipart form data for OCR processing
+            files = {
+                'file': ('business_registration.png', self.create_test_image_with_text(test_content), 'image/png')
+            }
+            data = {
+                'document_type': 'business_registration'
+            }
+            
+            url = f"{self.base_url}/vendors/documents/{self.test_document_id}/ocr/process"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if "result" in response_data and "processing_id" in response_data["result"]:
+                    result = response_data["result"]
+                    self.ocr_processing_id = result["processing_id"]
+                    
+                    # Validate OCR result structure
+                    required_fields = ["processing_id", "status", "overall_confidence", "total_words", "page_count"]
+                    missing_fields = [field for field in required_fields if field not in result]
+                    
+                    if not missing_fields:
+                        self.log_test("OCR Document Processing", True, "OCR processing completed successfully", 
+                                    {
+                                        "processing_id": result["processing_id"],
+                                        "confidence": result["overall_confidence"],
+                                        "words": result["total_words"],
+                                        "pages": result["page_count"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("OCR Document Processing", False, f"Missing result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("OCR Document Processing", False, "Missing result or processing_id in response", response_data)
+                    return False
+            else:
+                self.log_test("OCR Document Processing", False, f"OCR processing failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("OCR Document Processing", False, f"OCR processing error: {str(e)}")
+            return False
+
+    def test_ocr_results_retrieval(self):
+        """Test OCR results retrieval endpoint"""
+        if not self.vendor_token:
+            self.log_test("OCR Results Retrieval", False, "No vendor token available")
+            return False
+            
+        if not self.test_document_id:
+            self.log_test("OCR Results Retrieval", False, "No test document ID available")
+            return False
+            
+        try:
+            response = self.make_request("GET", f"/vendors/documents/{self.test_document_id}/ocr/results", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "ocr_results" in data:
+                    ocr_results = data["ocr_results"]
+                    
+                    # Validate OCR results structure
+                    required_fields = ["processing_id", "vendor_id", "document_id", "combined_text", "overall_confidence"]
+                    missing_fields = [field for field in required_fields if field not in ocr_results]
+                    
+                    if not missing_fields:
+                        self.log_test("OCR Results Retrieval", True, "OCR results retrieved successfully", 
+                                    {
+                                        "processing_id": ocr_results["processing_id"],
+                                        "confidence": ocr_results["overall_confidence"],
+                                        "text_length": len(ocr_results["combined_text"])
+                                    })
+                        return True
+                    else:
+                        self.log_test("OCR Results Retrieval", False, f"Missing OCR result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("OCR Results Retrieval", False, "Missing ocr_results in response", data)
+                    return False
+            elif response.status_code == 404:
+                self.log_test("OCR Results Retrieval", False, "OCR results not found - document may not be processed yet")
+                return False
+            else:
+                self.log_test("OCR Results Retrieval", False, f"OCR results retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("OCR Results Retrieval", False, f"OCR results retrieval error: {str(e)}")
+            return False
+
+    def test_ocr_data_validation(self):
+        """Test OCR data validation endpoint"""
+        if not self.vendor_token:
+            self.log_test("OCR Data Validation", False, "No vendor token available")
+            return False
+            
+        if not self.test_document_id:
+            self.log_test("OCR Data Validation", False, "No test document ID available")
+            return False
+            
+        try:
+            # Define expected fields for validation
+            validation_request = {
+                "expected_fields": {
+                    "company_name": "Test Vendor Business Ltd",
+                    "registration_number": "RC123456789",
+                    "tax_id": "TIN987654321",
+                    "business_address": "123 Test Street, Lagos, Nigeria"
+                }
+            }
+            
+            response = self.make_request("POST", f"/vendors/documents/{self.test_document_id}/ocr/validate", 
+                                       validation_request, token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "validation_results" in data:
+                    validation_results = data["validation_results"]
+                    
+                    # Validate validation results structure
+                    required_fields = ["validation_id", "vendor_id", "document_id", "field_validations", "overall_validation_score"]
+                    missing_fields = [field for field in required_fields if field not in validation_results]
+                    
+                    if not missing_fields:
+                        field_validations = validation_results["field_validations"]
+                        validation_score = validation_results["overall_validation_score"]
+                        
+                        self.log_test("OCR Data Validation", True, "OCR data validation completed successfully", 
+                                    {
+                                        "validation_id": validation_results["validation_id"],
+                                        "validation_score": validation_score,
+                                        "fields_validated": len(field_validations),
+                                        "validation_passed": validation_results.get("validation_passed", False)
+                                    })
+                        return True
+                    else:
+                        self.log_test("OCR Data Validation", False, f"Missing validation result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("OCR Data Validation", False, "Missing validation_results in response", data)
+                    return False
+            else:
+                self.log_test("OCR Data Validation", False, f"OCR data validation failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("OCR Data Validation", False, f"OCR data validation error: {str(e)}")
+            return False
+
+    def test_vendor_ocr_summary(self):
+        """Test vendor OCR summary endpoint"""
+        if not self.vendor_token:
+            self.log_test("Vendor OCR Summary", False, "No vendor token available")
+            return False
+            
+        try:
+            response = self.make_request("GET", "/vendors/ocr/summary", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "ocr_summary" in data:
+                    ocr_summary = data["ocr_summary"]
+                    
+                    # Validate OCR summary structure
+                    required_fields = ["vendor_id", "total_documents", "processed_documents", "average_confidence"]
+                    missing_fields = [field for field in required_fields if field not in ocr_summary]
+                    
+                    if not missing_fields:
+                        self.log_test("Vendor OCR Summary", True, "OCR summary retrieved successfully", 
+                                    {
+                                        "total_documents": ocr_summary["total_documents"],
+                                        "processed_documents": ocr_summary["processed_documents"],
+                                        "average_confidence": ocr_summary["average_confidence"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Vendor OCR Summary", False, f"Missing OCR summary fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Vendor OCR Summary", False, "Missing ocr_summary in response", data)
+                    return False
+            else:
+                self.log_test("Vendor OCR Summary", False, f"OCR summary retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Vendor OCR Summary", False, f"OCR summary error: {str(e)}")
+            return False
+
+    def test_admin_ocr_results(self):
+        """Test admin OCR results endpoint"""
+        if not self.admin_token:
+            self.log_test("Admin OCR Results", False, "No admin token available")
+            return False
+            
+        if not self.ocr_processing_id:
+            self.log_test("Admin OCR Results", False, "No OCR processing ID available")
+            return False
+            
+        try:
+            response = self.make_request("GET", f"/admin/ocr/results/{self.ocr_processing_id}", token=self.admin_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "ocr_results" in data:
+                    ocr_results = data["ocr_results"]
+                    
+                    # Validate admin OCR results structure
+                    required_fields = ["processing_id", "vendor_id", "document_id", "combined_text", "overall_confidence"]
+                    missing_fields = [field for field in required_fields if field not in ocr_results]
+                    
+                    if not missing_fields:
+                        self.log_test("Admin OCR Results", True, "Admin OCR results retrieved successfully", 
+                                    {
+                                        "processing_id": ocr_results["processing_id"],
+                                        "vendor_id": ocr_results["vendor_id"],
+                                        "confidence": ocr_results["overall_confidence"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Admin OCR Results", False, f"Missing admin OCR result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Admin OCR Results", False, "Missing ocr_results in response", data)
+                    return False
+            elif response.status_code == 404:
+                self.log_test("Admin OCR Results", False, "OCR results not found for processing ID")
+                return False
+            else:
+                self.log_test("Admin OCR Results", False, f"Admin OCR results retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin OCR Results", False, f"Admin OCR results error: {str(e)}")
+            return False
+
+    def test_ocr_error_handling(self):
+        """Test OCR error handling with invalid files"""
+        if not self.vendor_token:
+            self.log_test("OCR Error Handling", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test with unsupported file type
+            files = {
+                'file': ('test.txt', b'This is a text file', 'text/plain')
+            }
+            data = {
+                'document_type': 'business_registration'
+            }
+            
+            url = f"{self.base_url}/vendors/documents/test-doc-id/ocr/process"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 400:
+                error_data = response.json()
+                if "detail" in error_data and "Unsupported file type" in error_data["detail"]:
+                    self.log_test("OCR Error Handling", True, "Correctly rejected unsupported file type")
+                    return True
+                else:
+                    self.log_test("OCR Error Handling", False, f"Unexpected error response: {error_data}")
+                    return False
+            else:
+                self.log_test("OCR Error Handling", False, f"Expected 400 error but got {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("OCR Error Handling", False, f"OCR error handling test error: {str(e)}")
+            return False
     
     def run_all_tests(self):
         """Run all backend tests"""
