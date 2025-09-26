@@ -538,7 +538,7 @@ async def get_vendor_id_info(current_user: dict = Depends(get_current_user)):
     """Get vendor ID information for current user"""
     try:
         # Get vendor profile
-        vendor_profile = await ecosystem_service.vendor_profiles_collection.find_one({
+        vendor_profile = await ecosystem_service.vendors_collection.find_one({
             "user_id": current_user["user_id"]
         })
         
