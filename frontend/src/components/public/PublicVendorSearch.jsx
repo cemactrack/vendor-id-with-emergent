@@ -391,7 +391,7 @@ const PublicVendorSearch = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
