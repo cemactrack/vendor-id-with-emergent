@@ -140,8 +140,17 @@ const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
 
         {/* QR Code - Below Photo */}
         <div className="absolute bottom-6 left-24">
-          <div className="w-12 h-12 bg-white border border-gray-300 rounded flex items-center justify-center">
-            <div className="w-10 h-10 bg-black opacity-80 flex items-center justify-center text-white text-xs">
+          <div className="w-12 h-12 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden">
+            <img 
+              src={vendorAPI.getQRCodeURL(vendor.id)} 
+              alt="QR Code"
+              className="w-10 h-10 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-10 h-10 bg-black opacity-80 flex items-center justify-center text-white text-xs" style={{display: 'none'}}>
               QR
             </div>
           </div>
@@ -149,8 +158,17 @@ const VendorCard = ({ vendor, isFlipped, onFlip, className = '' }) => {
 
         {/* Barcode - Right of QR */}
         <div className="absolute bottom-6 left-40">
-          <div className="w-16 h-12 bg-white border border-gray-300 rounded flex items-center justify-center">
-            <div className="w-14 h-8 bg-black opacity-80 flex items-center justify-center flex-col">
+          <div className="w-16 h-12 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden">
+            <img 
+              src={vendorAPI.getBarcodeURL(vendor.id)} 
+              alt="Barcode"
+              className="w-14 h-8 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-14 h-8 bg-black opacity-80 flex items-center justify-center flex-col" style={{display: 'none'}}>
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="w-full h-1 bg-white my-0.5"></div>
               ))}
