@@ -97,6 +97,9 @@ class EscrowService:
             order_dict = order.dict()
             await self.orders_collection.insert_one(order_dict)
             
+            # Remove MongoDB _id field for JSON serialization
+            order_dict.pop('_id', None)
+            
             # Generate payment instructions
             payment_instructions = await self._generate_payment_instructions(order)
             
