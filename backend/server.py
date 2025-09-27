@@ -71,6 +71,9 @@ ocr_service = DocumentOCRService(mongo_url)
 escrow_service = EscrowService(db)
 rating_service = RatingService(db)
 biometric_service = BiometricService(db)
+consent_service = ConsentService(db)
+security_service = SecurityService(db)
+fraud_detection_service = FraudDetectionService(db)
 db_setup = DatabaseSetup(db)
 
 # Security
