@@ -6,7 +6,11 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from models.security_models import *
-import geoip2.database
+try:
+    import geoip2.database
+    GEOIP_AVAILABLE = True
+except ImportError:
+    GEOIP_AVAILABLE = False
 import re
 
 logger = logging.getLogger(__name__)
