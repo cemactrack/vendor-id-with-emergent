@@ -25,6 +25,8 @@ import VendorIDCard from "./components/vendor/VendorIDCard";
 import OCRProcessing from "./components/vendor/OCRProcessing";
 import DocumentReview from "./components/admin/DocumentReview";
 import VerificationQueue from "./components/admin/VerificationQueue";
+import EscrowDashboard from "./components/escrow/EscrowDashboard";
+import OrderCreation from "./components/escrow/OrderCreation";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
