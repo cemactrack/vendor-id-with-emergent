@@ -1304,7 +1304,7 @@ class VendorEcosystemTester:
                 "proof_files": ["receipt_001.jpg", "bank_statement.pdf"]
             }
             
-            response = self.make_request("POST", "/escrow/payments/submit-proof", payment_proof_data, token=customer_token)
+            response = self.make_request("POST", "/escrow/payments/submit-proof", payment_proof_data, token=self.customer_token)
             
             if response.status_code == 200:
                 data = response.json()
