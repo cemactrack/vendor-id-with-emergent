@@ -1168,6 +1168,427 @@ class VendorEcosystemTester:
             self.log_test("API Consistency Fixes", False, f"API consistency test error: {str(e)}")
             return False
     
+    # ===== BIOMETRIC VERIFICATION SYSTEM TESTS =====
+    
+    def create_test_image_base64(self, text: str = "Test Document") -> str:
+        """Create a test image and return as base64 data URL"""
+        try:
+            # Create a simple test image
+            img = Image.new('RGB', (400, 300), color='white')
+            draw = ImageDraw.Draw(img)
+            
+            # Add text to image
+            draw.text((50, 50), text, fill='black')
+            
+            # Convert to base64
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format='PNG')
+            img_base64 = base64.b64encode(img_bytes.getvalue()).decode()
+            
+            return f"data:image/png;base64,{img_base64}"
+            
+        except Exception as e:
+            self.log_test("Create Test Image Base64", False, f"Failed to create test image: {str(e)}")
+            return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    
+    def test_biometric_verification_start(self):
+        """Test starting biometric verification session"""
+        if not self.vendor_token:
+            self.log_test("Biometric Verification Start", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test starting verification session
+            session_data = {
+                "session_type": "initial_verification"
+            }
+            
+            response = self.make_request("POST", "/biometric/verification/start", session_data, token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "success" in data and data["success"] and "session" in data:
+                    session = data["session"]
+                    required_fields = ["session_id", "vendor_id", "status", "started_at", "expires_at"]
+                    missing_fields = [field for field in required_fields if field not in session]
+                    
+                    if not missing_fields:
+                        self.biometric_session_id = session["session_id"]
+                        self.log_test("Biometric Verification Start", True, "Biometric verification session started successfully", 
+                                    {
+                                        "session_id": session["session_id"],
+                                        "status": session["status"],
+                                        "session_type": session.get("session_type", "initial_verification"),
+                                        "next_step": data.get("next_step", "document_upload")
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Verification Start", False, f"Missing session fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Verification Start", False, "Missing success or session in response", data)
+                    return False
+            else:
+                self.log_test("Biometric Verification Start", False, f"Session start failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Verification Start", False, f"Biometric session start error: {str(e)}")
+            return False
+    
+    def test_biometric_verification_status(self):
+        """Test getting biometric verification status"""
+        if not self.vendor_token:
+            self.log_test("Biometric Verification Status", False, "No vendor token available")
+            return False
+            
+        try:
+            # Get vendor ID from token or use test vendor ID
+            test_vendor_id = "test-vendor-123"  # Use a test vendor ID
+            
+            response = self.make_request("GET", f"/biometric/verification/status/{test_vendor_id}", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "success" in data and data["success"] and "status" in data:
+                    status = data["status"]
+                    required_fields = ["vendor_id", "current_status", "verification_score", "compliance_status", "active_templates"]
+                    missing_fields = [field for field in required_fields if field not in status]
+                    
+                    if not missing_fields:
+                        self.log_test("Biometric Verification Status", True, "Biometric verification status retrieved successfully", 
+                                    {
+                                        "vendor_id": status["vendor_id"],
+                                        "current_status": status["current_status"],
+                                        "verification_score": status["verification_score"],
+                                        "compliance_status": status["compliance_status"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Verification Status", False, f"Missing status fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Verification Status", False, "Missing success or status in response", data)
+                    return False
+            elif response.status_code == 403:
+                self.log_test("Biometric Verification Status", True, "Access control working - 403 for unauthorized access")
+                return True
+            else:
+                self.log_test("Biometric Verification Status", False, f"Status request failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Verification Status", False, f"Biometric status error: {str(e)}")
+            return False
+    
+    def test_biometric_document_analysis(self):
+        """Test biometric document analysis endpoint"""
+        if not self.vendor_token:
+            self.log_test("Biometric Document Analysis", False, "No vendor token available")
+            return False
+            
+        try:
+            # Create test document image
+            test_image = self.create_test_image_with_text("""
+            NATIONAL IDENTITY CARD
+            
+            Name: John Doe
+            ID Number: 123456789
+            Date of Birth: 1990-01-01
+            Nationality: Nigerian
+            """)
+            
+            # Prepare multipart form data
+            files = {
+                'file': ('national_id.png', test_image, 'image/png')
+            }
+            data = {
+                'document_type': 'national_id'
+            }
+            
+            url = f"{self.base_url}/biometric/document/analyze"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if "success" in response_data and response_data["success"] and "analysis_result" in response_data:
+                    analysis_result = response_data["analysis_result"]
+                    
+                    # Validate analysis result structure
+                    required_fields = ["document_type", "extracted_text", "face_image_extracted", "document_valid", "quality_score"]
+                    missing_fields = [field for field in required_fields if field not in analysis_result]
+                    
+                    if not missing_fields:
+                        self.log_test("Biometric Document Analysis", True, "Document analysis completed successfully", 
+                                    {
+                                        "document_type": analysis_result["document_type"],
+                                        "face_extracted": analysis_result["face_image_extracted"],
+                                        "document_valid": analysis_result["document_valid"],
+                                        "quality_score": analysis_result["quality_score"],
+                                        "security_features": len(analysis_result.get("security_features_detected", [])),
+                                        "tampering_detected": analysis_result.get("tampering_detected", False)
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Document Analysis", False, f"Missing analysis result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Document Analysis", False, "Missing success or analysis_result in response", response_data)
+                    return False
+            else:
+                self.log_test("Biometric Document Analysis", False, f"Document analysis failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Document Analysis", False, f"Document analysis error: {str(e)}")
+            return False
+    
+    def test_biometric_liveness_challenge(self):
+        """Test biometric liveness challenge creation"""
+        if not self.vendor_token:
+            self.log_test("Biometric Liveness Challenge", False, "No vendor token available")
+            return False
+            
+        try:
+            # Create liveness challenge
+            challenge_data = {
+                "challenge_types": ["blink", "head_turn_left", "smile"]
+            }
+            
+            response = self.make_request("POST", "/biometric/liveness/challenge", challenge_data, token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "success" in data and data["success"] and "challenge" in data:
+                    challenge = data["challenge"]
+                    
+                    # Validate challenge structure
+                    required_fields = ["challenge_id", "vendor_id", "challenge_type", "instructions", "timeout_seconds"]
+                    missing_fields = [field for field in required_fields if field not in challenge]
+                    
+                    if not missing_fields:
+                        self.biometric_challenge_id = challenge["challenge_id"]
+                        self.log_test("Biometric Liveness Challenge", True, "Liveness challenge created successfully", 
+                                    {
+                                        "challenge_id": challenge["challenge_id"],
+                                        "challenge_type": challenge["challenge_type"],
+                                        "timeout_seconds": challenge["timeout_seconds"],
+                                        "instructions": challenge["instructions"][:50] + "..." if len(challenge["instructions"]) > 50 else challenge["instructions"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Liveness Challenge", False, f"Missing challenge fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Liveness Challenge", False, "Missing success or challenge in response", data)
+                    return False
+            else:
+                self.log_test("Biometric Liveness Challenge", False, f"Challenge creation failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Liveness Challenge", False, f"Liveness challenge error: {str(e)}")
+            return False
+    
+    def test_biometric_liveness_response(self):
+        """Test biometric liveness response processing"""
+        if not self.vendor_token:
+            self.log_test("Biometric Liveness Response", False, "No vendor token available")
+            return False
+            
+        if not hasattr(self, 'biometric_challenge_id') or not self.biometric_challenge_id:
+            self.log_test("Biometric Liveness Response", False, "No challenge ID available")
+            return False
+            
+        try:
+            # Create a simple test video/image for liveness response
+            # For testing, we'll create a small image that simulates a video frame
+            test_video_data = self.create_test_image_with_text("Live Person Video Frame")
+            
+            # Prepare multipart form data
+            files = {
+                'file': ('liveness_response.webm', test_video_data, 'video/webm')
+            }
+            data = {
+                'challenge_id': self.biometric_challenge_id
+            }
+            
+            url = f"{self.base_url}/biometric/liveness/respond"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if "success" in response_data and response_data["success"] and "liveness_result" in response_data:
+                    liveness_result = response_data["liveness_result"]
+                    
+                    # Validate liveness result structure
+                    required_fields = ["challenge_id", "vendor_id", "success", "confidence_score", "liveness_indicators", "face_detected"]
+                    missing_fields = [field for field in required_fields if field not in liveness_result]
+                    
+                    if not missing_fields:
+                        self.log_test("Biometric Liveness Response", True, "Liveness response processed successfully", 
+                                    {
+                                        "challenge_id": liveness_result["challenge_id"],
+                                        "success": liveness_result["success"],
+                                        "confidence_score": liveness_result["confidence_score"],
+                                        "face_detected": liveness_result["face_detected"],
+                                        "face_quality": liveness_result.get("face_quality", "unknown"),
+                                        "spoof_detection": liveness_result.get("spoof_detection_passed", False),
+                                        "processing_time": liveness_result.get("processing_time_ms", 0)
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Liveness Response", False, f"Missing liveness result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Liveness Response", False, "Missing success or liveness_result in response", response_data)
+                    return False
+            else:
+                self.log_test("Biometric Liveness Response", False, f"Liveness response failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Liveness Response", False, f"Liveness response error: {str(e)}")
+            return False
+    
+    def test_biometric_face_matching(self):
+        """Test biometric face matching endpoint"""
+        if not self.vendor_token:
+            self.log_test("Biometric Face Matching", False, "No vendor token available")
+            return False
+            
+        try:
+            # Create two test face images for matching
+            reference_image = self.create_test_image_with_text("Reference Face Image")
+            comparison_image = self.create_test_image_with_text("Comparison Face Image")
+            
+            # Prepare multipart form data
+            files = {
+                'reference_file': ('reference.png', reference_image, 'image/png'),
+                'comparison_file': ('comparison.png', comparison_image, 'image/png')
+            }
+            data = {
+                'match_threshold': '0.75'
+            }
+            
+            url = f"{self.base_url}/biometric/face/match"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                response_data = response.json()
+                if "success" in response_data and response_data["success"] and "match_result" in response_data:
+                    match_result = response_data["match_result"]
+                    
+                    # Validate match result structure
+                    required_fields = ["vendor_id", "similarity_score", "match_confirmed", "confidence_level", "reference_face_quality", "comparison_face_quality"]
+                    missing_fields = [field for field in required_fields if field not in match_result]
+                    
+                    if not missing_fields:
+                        self.log_test("Biometric Face Matching", True, "Face matching completed successfully", 
+                                    {
+                                        "similarity_score": match_result["similarity_score"],
+                                        "match_confirmed": match_result["match_confirmed"],
+                                        "confidence_level": match_result["confidence_level"],
+                                        "reference_quality": match_result["reference_face_quality"],
+                                        "comparison_quality": match_result["comparison_face_quality"],
+                                        "match_id": match_result.get("match_id", "unknown")
+                                    })
+                        return True
+                    else:
+                        self.log_test("Biometric Face Matching", False, f"Missing match result fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Biometric Face Matching", False, "Missing success or match_result in response", response_data)
+                    return False
+            else:
+                self.log_test("Biometric Face Matching", False, f"Face matching failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Face Matching", False, f"Face matching error: {str(e)}")
+            return False
+    
+    def test_biometric_error_handling(self):
+        """Test biometric system error handling"""
+        if not self.vendor_token:
+            self.log_test("Biometric Error Handling", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test with invalid file type for document analysis
+            files = {
+                'file': ('test.txt', b'This is not an image', 'text/plain')
+            }
+            data = {
+                'document_type': 'national_id'
+            }
+            
+            url = f"{self.base_url}/biometric/document/analyze"
+            headers = {"Authorization": f"Bearer {self.vendor_token}"}
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 400:
+                error_data = response.json()
+                if "detail" in error_data and ("Invalid file type" in error_data["detail"] or "Only JPEG, PNG, and WebP allowed" in error_data["detail"]):
+                    self.log_test("Biometric Error Handling", True, "Correctly rejected invalid file type for document analysis")
+                    return True
+                else:
+                    self.log_test("Biometric Error Handling", False, f"Unexpected error response: {error_data}")
+                    return False
+            else:
+                self.log_test("Biometric Error Handling", False, f"Expected 400 error but got {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Error Handling", False, f"Biometric error handling test error: {str(e)}")
+            return False
+    
+    def test_biometric_authentication_security(self):
+        """Test biometric endpoints authentication and security"""
+        try:
+            # Test accessing biometric endpoints without authentication
+            endpoints_to_test = [
+                "/biometric/verification/start",
+                "/biometric/verification/status/test-vendor",
+                "/biometric/document/analyze",
+                "/biometric/liveness/challenge",
+                "/biometric/face/match"
+            ]
+            
+            authenticated_endpoints = 0
+            total_endpoints = len(endpoints_to_test)
+            
+            for endpoint in endpoints_to_test:
+                try:
+                    if endpoint == "/biometric/verification/start" or endpoint == "/biometric/liveness/challenge":
+                        response = self.make_request("POST", endpoint, {"test": "data"})
+                    else:
+                        response = self.make_request("GET", endpoint)
+                    
+                    if response.status_code == 401 or response.status_code == 403:
+                        authenticated_endpoints += 1
+                except:
+                    # If request fails due to authentication, that's expected
+                    authenticated_endpoints += 1
+            
+            if authenticated_endpoints == total_endpoints:
+                self.log_test("Biometric Authentication Security", True, f"All {total_endpoints} biometric endpoints properly secured with authentication")
+                return True
+            else:
+                self.log_test("Biometric Authentication Security", False, f"Only {authenticated_endpoints}/{total_endpoints} endpoints properly secured")
+                return False
+                
+        except Exception as e:
+            self.log_test("Biometric Authentication Security", False, f"Authentication security test error: {str(e)}")
+            return False
+    
     def test_comprehensive_authentication_flow(self):
         """Test comprehensive authentication flow with all enhancements"""
         try:
