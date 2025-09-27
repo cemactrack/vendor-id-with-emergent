@@ -158,7 +158,11 @@ class EscrowService:
         )
         
         # Save payment instruction
-        await self.payments_collection.insert_one(payment_instruction.dict())
+        payment_dict = payment_instruction.dict()
+        await self.payments_collection.insert_one(payment_dict)
+        
+        # Remove MongoDB _id field for JSON serialization
+        payment_dict.pop('_id', None)
         
         return payment_instruction
     
