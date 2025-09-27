@@ -241,7 +241,7 @@ class VendorEcosystemService:
                 integration.pop("_id", None)
             
             # Get documents from document service
-            documents_cursor = self.db.vendor_documents.find({"vendor_id": user_id})
+            documents_cursor = self.db.vendor_documents.find({"vendor_id": vendor_id})
             documents = await documents_cursor.to_list(length=None)
             for document in documents:
                 document.pop("_id", None)
@@ -249,7 +249,7 @@ class VendorEcosystemService:
                 document.pop("file_path", None)
             
             # Get recent security events
-            security_events_cursor = self.db.security_events.find({"user_id": user_id}).sort("created_at", -1).limit(5)
+            security_events_cursor = self.db.security_events.find({"vendor_id": vendor_id}).sort("created_at", -1).limit(5)
             security_events = await security_events_cursor.to_list(length=None)
             for event in security_events:
                 event.pop("_id", None)
