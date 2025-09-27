@@ -489,8 +489,11 @@
 
 ## test_plan:
   current_focus:
-    - "Enhanced services testing completed successfully"
-    - "Minor issues with security info fields and document upload duplicates"
+    - "Rating System - Rating Submission"
+    - "Rating System - Vendor Score Management"
+    - "Rating System - Rating Retrieval & Display"
+    - "Rating System - Analytics & Insights"
+    - "Rating System - Integration Points"
   stuck_tasks:
     - "None currently - all major functionality working"
   test_all: false
