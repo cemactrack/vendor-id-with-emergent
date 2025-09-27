@@ -273,17 +273,6 @@ async def verify_two_factor_code(request: TwoFactorVerify, current_user: dict = 
 async def get_security_info(current_user: dict = Depends(get_current_user)):
     """Get user security information"""
     security_info = await auth_service.get_user_security_info(current_user["user_id"])
-    
-    if not security_info:
-        # Return default security info for new users
-        security_info = {
-            "user_id": current_user["user_id"],
-            "email_verified": False,
-            "two_factor_enabled": False,
-            "failed_login_attempts": 0,
-            "account_locked_until": None
-        }
-    
     return {"security": security_info}
 
 @auth_router.get("/security/events")
