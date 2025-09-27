@@ -491,5 +491,55 @@ export const vendorEcosystemAPI = {
   getEscrowDashboard: async () => {
     const response = await apiClient.get('/escrow/admin/dashboard');
     return response.dashboard;
+  },
+
+  // ===== RATING & REVIEW SYSTEM =====
+
+  // Submit Rating
+  submitRating: async (ratingData) => {
+    const response = await apiClient.post('/ratings/submit', ratingData);
+    return response;
+  },
+
+  // Get Vendor Ratings
+  getVendorRatings: async (vendorId, limit = 50, offset = 0) => {
+    const response = await apiClient.get(`/ratings/vendor/${vendorId}?limit=${limit}&offset=${offset}`);
+    return response;
+  },
+
+  // Get Vendor Score
+  getVendorScore: async (vendorId) => {
+    const response = await apiClient.get(`/ratings/vendor/${vendorId}/score`);
+    return response.score;
+  },
+
+  // Get Vendor Rating Summary
+  getVendorRatingSummary: async (vendorId) => {
+    const response = await apiClient.get(`/ratings/vendor/${vendorId}/summary`);
+    return response.summary;
+  },
+
+  // Get Rating Eligible Orders
+  getRatingEligibleOrders: async (vendorId) => {
+    const response = await apiClient.get(`/ratings/eligible-orders?vendor_id=${vendorId}`);
+    return response;
+  },
+
+  // Get Vendor Rating Analytics
+  getVendorRatingAnalytics: async (vendorId, period = '30d') => {
+    const response = await apiClient.get(`/ratings/vendor/${vendorId}/analytics?period=${period}`);
+    return response.analytics;
+  },
+
+  // Admin: Get Flagged Reviews
+  getFlaggedReviews: async () => {
+    const response = await apiClient.get('/ratings/admin/flagged');
+    return response;
+  },
+
+  // Admin: Get Vendor Badge Distribution
+  getVendorBadgeDistribution: async () => {
+    const response = await apiClient.get('/ratings/admin/vendor-badges');
+    return response.badge_distribution;
   }
 };
