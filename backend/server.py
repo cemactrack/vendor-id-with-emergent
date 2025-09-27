@@ -79,6 +79,7 @@ biometric_service = BiometricService(db)
 consent_service = ConsentService(db)
 security_service = SecurityService(db)
 fraud_detection_service = FraudDetectionService(db)
+trust_validation_service = TrustValidationService(db)
 db_setup = DatabaseSetup(db)
 
 # Security
