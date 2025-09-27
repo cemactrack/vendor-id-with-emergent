@@ -361,6 +361,11 @@ class TrustValidationService:
     async def _get_validation_rules(self) -> List[ProfileValidationRule]:
         """Get profile validation rules"""
         try:
+            # Initialize rules if they don't exist
+            existing_count = await self.validation_rules_collection.count_documents({})
+            if existing_count == 0:
+                await self._initialize_validation_rules()
+            
             rules_data = await self.validation_rules_collection.find({}).to_list(length=None)
             rules = []
             for rule_data in rules_data:
