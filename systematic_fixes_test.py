@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 # Configuration
-BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
+BACKEND_URL = "https://vendor-verify-3.preview.emergentagent.com/api"
 TEST_USER_EMAIL = "systematic.fixes.test@example.com"
 TEST_USER_PASSWORD = "SystematicTestPass123!"
 TEST_VENDOR_EMAIL = "vendor.fixes.test@example.com"

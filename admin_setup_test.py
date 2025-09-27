@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import datetime
 
-BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
+BACKEND_URL = "https://vendor-verify-3.preview.emergentagent.com/api"
 
 def test_admin_setup():
     """Test admin user creation and login"""

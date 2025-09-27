@@ -448,7 +448,7 @@ class VendorEcosystemService:
                 "verified_since": vendor.get("verified_at"),
                 "categories": [vendor.get("category")],
                 "location": vendor.get("business_address"),
-                "qr_verification_url": f"https://idecosystem.preview.emergentagent.com/verify/{vendor_id}"
+                "qr_verification_url": f"https://vendor-verify-3.preview.emergentagent.com/verify/{vendor_id}"
             }
             
             return verification_data

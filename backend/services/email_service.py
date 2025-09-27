@@ -20,7 +20,7 @@ class EmailService:
         self.smtp_username = os.getenv("SMTP_USERNAME", "")
         self.smtp_password = os.getenv("SMTP_PASSWORD", "")
         self.from_email = os.getenv("FROM_EMAIL", "noreply@vendoreco.com")
-        self.frontend_url = os.getenv("FRONTEND_URL", "https://idecosystem.preview.emergentagent.com")
+        self.frontend_url = os.getenv("FRONTEND_URL", "https://vendor-verify-3.preview.emergentagent.com")
         self.mock_email = os.getenv("MOCK_EMAIL", "true").lower() == "true"
         
     def generate_verification_token(self) -> str:
