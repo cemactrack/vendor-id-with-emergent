@@ -247,6 +247,17 @@ const AppContent = () => {
         />
         
         <Route 
+          path="/profile/validation" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProfileValidation />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
           path="/admin" 
           element={
             <ProtectedRoute requiredRole="verification_officer">
