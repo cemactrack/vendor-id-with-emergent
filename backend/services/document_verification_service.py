@@ -66,16 +66,35 @@ class DocumentVerificationService:
             # Generate file hash for duplicate detection
             file_hash = self.generate_file_hash(file_path)
             
-            # Check for duplicates
+            # Check for duplicates (allow same vendor to replace documents)
             duplicate = await self.documents_collection.find_one({
                 "file_hash": file_hash,
-                "vendor_id": {"$ne": vendor_id}
+                "vendor_id": {"$ne": vendor_id}  # Only prevent duplicates from different vendors
             })
             
-            if duplicate:
-                # Remove the uploaded file
+            # Allow duplicate from same vendor (document update/replacement)
+            existing_doc = await self.documents_collection.find_one({
+                "vendor_id": vendor_id,
+                "document_type": document_type
+            })
+            
+            if duplicate and not existing_doc:
+                # Remove the uploaded file only if it's a true cross-vendor duplicate
                 os.remove(file_path)
                 return False, None, "Document appears to be a duplicate of another vendor's submission"
+            
+            # If same vendor is replacing a document, mark old one as replaced
+            if existing_doc:
+                await self.documents_collection.update_one(
+                    {"document_id": existing_doc["document_id"]},
+                    {
+                        "$set": {
+                            "status": "replaced",
+                            "replaced_at": datetime.utcnow(),
+                            "replaced_by": document_id
+                        }
+                    }
+                )
             
             # Create document record
             document_record = {
