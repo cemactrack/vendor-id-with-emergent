@@ -32,6 +32,9 @@ from services.ocr_service import DocumentOCRService
 from services.escrow_service import EscrowService
 from services.rating_service import RatingService
 from services.biometric_service import BiometricService
+from services.consent_service import ConsentService
+from services.security_service import SecurityService
+from services.fraud_detection_service import FraudDetectionService
 from utils.database_setup import DatabaseSetup
 
 ROOT_DIR = Path(__file__).parent
