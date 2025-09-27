@@ -135,7 +135,8 @@ class VendorEcosystemService:
                 raise ValueError("Vendor profile already exists for this user")
             
             # Generate vendor ID
-            vendor_id = f"VID-{profile_data.country.value}-{str(uuid.uuid4())[:8].upper()}"
+            user_country = user.get("country", "US")  # Get country from user, default to US
+            vendor_id = f"VID-{user_country}-{str(uuid.uuid4())[:8].upper()}"
             
             # Create profile document
             profile_dict = {
@@ -151,8 +152,6 @@ class VendorEcosystemService:
             }
             
             # Convert enums to values
-            if isinstance(profile_dict.get("country"), CountryCode):
-                profile_dict["country"] = profile_dict["country"].value
             if isinstance(profile_dict.get("category"), BusinessCategory):
                 profile_dict["category"] = profile_dict["category"].value
             
