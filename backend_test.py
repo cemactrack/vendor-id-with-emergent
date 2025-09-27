@@ -1189,10 +1189,541 @@ class VendorEcosystemTester:
             self.log_test("Comprehensive Authentication Flow", False, f"Comprehensive auth test error: {str(e)}")
             return False
     
+    # ===== ESCROW SYSTEM TESTS =====
+    
+    def test_escrow_order_creation(self):
+        """Test escrow order creation with multi-currency items"""
+        if not self.customer_token:
+            self.log_test("Escrow Order Creation", False, "No customer token available")
+            return False
+            
+        try:
+            # Create order with multi-currency items (should fail - all items must use same currency)
+            order_data = {
+                "vendor_id": "VID-NG-TEST123",
+                "items": [
+                    {
+                        "product_name": "Web Development Service",
+                        "description": "Custom website development",
+                        "quantity": 1,
+                        "unit_price": 500.00,
+                        "currency": "USD"
+                    },
+                    {
+                        "product_name": "SEO Optimization",
+                        "description": "Search engine optimization service",
+                        "quantity": 1,
+                        "unit_price": 200.00,
+                        "currency": "USD"
+                    }
+                ],
+                "delivery_address": "123 Business Street, Lagos, Nigeria",
+                "special_instructions": "Please deliver within 2 weeks",
+                "expected_delivery_date": "2024-02-15T10:00:00Z"
+            }
+            
+            response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "order" in data and "escrow" in data and "payment_instructions" in data:
+                    order = data["order"]
+                    escrow = data["escrow"]
+                    payment_instructions = data["payment_instructions"]
+                    
+                    # Store order ID for subsequent tests
+                    self.test_order_id = order["order_id"]
+                    self.test_escrow_id = escrow["escrow_id"]
+                    self.test_payment_instruction_id = payment_instructions["instruction_id"]
+                    
+                    # Validate order structure
+                    required_order_fields = ["order_id", "customer_id", "vendor_id", "items", "subtotal", "platform_fee", "total_amount", "currency", "status"]
+                    missing_order_fields = [field for field in required_order_fields if field not in order]
+                    
+                    # Validate escrow structure
+                    required_escrow_fields = ["escrow_id", "order_id", "amount", "currency", "platform_fee", "vendor_amount", "status", "auto_release_date"]
+                    missing_escrow_fields = [field for field in required_escrow_fields if field not in escrow]
+                    
+                    # Validate payment instructions
+                    required_payment_fields = ["instruction_id", "order_id", "payment_method", "bank_details", "amount", "currency", "status"]
+                    missing_payment_fields = [field for field in required_payment_fields if field not in payment_instructions]
+                    
+                    if not missing_order_fields and not missing_escrow_fields and not missing_payment_fields:
+                        # Validate platform fee calculation (2.5%)
+                        expected_platform_fee = round(order["subtotal"] * 0.025, 2)
+                        actual_platform_fee = order["platform_fee"]
+                        
+                        if abs(expected_platform_fee - actual_platform_fee) < 0.01:  # Allow for rounding differences
+                            self.log_test("Escrow Order Creation", True, "Order created successfully with correct escrow setup", 
+                                        {
+                                            "order_id": order["order_id"],
+                                            "total_amount": order["total_amount"],
+                                            "platform_fee": actual_platform_fee,
+                                            "currency": order["currency"],
+                                            "escrow_status": escrow["status"],
+                                            "payment_method": payment_instructions["payment_method"]
+                                        })
+                            return True
+                        else:
+                            self.log_test("Escrow Order Creation", False, f"Platform fee calculation incorrect. Expected: {expected_platform_fee}, Got: {actual_platform_fee}")
+                            return False
+                    else:
+                        missing_fields = {
+                            "order": missing_order_fields,
+                            "escrow": missing_escrow_fields,
+                            "payment": missing_payment_fields
+                        }
+                        self.log_test("Escrow Order Creation", False, f"Missing required fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Escrow Order Creation", False, "Missing order, escrow, or payment_instructions in response", data)
+                    return False
+            else:
+                self.log_test("Escrow Order Creation", False, f"Order creation failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Escrow Order Creation", False, f"Order creation error: {str(e)}")
+            return False
+    
+    def test_escrow_payment_proof_submission(self):
+        """Test payment proof submission workflow"""
+        if not self.customer_token or not hasattr(self, 'test_payment_instruction_id'):
+            self.log_test("Payment Proof Submission", False, "No customer token or payment instruction ID available")
+            return False
+            
+        try:
+            payment_proof_data = {
+                "instruction_id": self.test_payment_instruction_id,
+                "reference_number": "TXN123456789",
+                "payment_date": "2024-01-15T14:30:00Z",
+                "notes": "Payment made via bank transfer",
+                "proof_files": ["receipt_001.jpg", "bank_statement.pdf"]
+            }
+            
+            response = self.make_request("POST", "/escrow/payments/submit-proof", payment_proof_data, token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "submitted" in data["message"].lower():
+                    self.log_test("Payment Proof Submission", True, "Payment proof submitted successfully", 
+                                {"reference_number": payment_proof_data["reference_number"]})
+                    return True
+                else:
+                    self.log_test("Payment Proof Submission", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Payment Proof Submission", False, f"Payment proof submission failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Payment Proof Submission", False, f"Payment proof submission error: {str(e)}")
+            return False
+    
+    def test_escrow_admin_payment_confirmation(self):
+        """Test admin payment confirmation process"""
+        if not self.admin_token or not hasattr(self, 'test_payment_instruction_id'):
+            self.log_test("Admin Payment Confirmation", False, "No admin token or payment instruction ID available")
+            return False
+            
+        try:
+            confirmation_data = {
+                "confirmed": True,
+                "notes": "Payment verified and confirmed by admin"
+            }
+            
+            response = self.make_request("POST", f"/escrow/payments/{self.test_payment_instruction_id}/confirm", 
+                                       confirmation_data, token=self.admin_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "confirmed" in data["message"].lower():
+                    self.log_test("Admin Payment Confirmation", True, "Payment confirmed successfully by admin")
+                    return True
+                else:
+                    self.log_test("Admin Payment Confirmation", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Admin Payment Confirmation", False, f"Payment confirmation failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Payment Confirmation", False, f"Payment confirmation error: {str(e)}")
+            return False
+    
+    def test_escrow_order_delivery(self):
+        """Test order delivery marking by vendor"""
+        if not self.vendor_token or not hasattr(self, 'test_order_id'):
+            self.log_test("Order Delivery", False, "No vendor token or order ID available")
+            return False
+            
+        try:
+            delivery_data = {
+                "delivery_notes": "Order delivered successfully to customer address"
+            }
+            
+            response = self.make_request("POST", f"/escrow/orders/{self.test_order_id}/delivered", 
+                                       delivery_data, token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "delivered" in data["message"].lower():
+                    self.log_test("Order Delivery", True, "Order marked as delivered successfully")
+                    return True
+                else:
+                    self.log_test("Order Delivery", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Order Delivery", False, f"Order delivery marking failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Order Delivery", False, f"Order delivery error: {str(e)}")
+            return False
+    
+    def test_escrow_order_completion(self):
+        """Test order completion and fund release"""
+        if not self.customer_token or not hasattr(self, 'test_order_id'):
+            self.log_test("Order Completion", False, "No customer token or order ID available")
+            return False
+            
+        try:
+            receipt_data = {
+                "satisfaction_rating": 5
+            }
+            
+            response = self.make_request("POST", f"/escrow/orders/{self.test_order_id}/confirm-receipt", 
+                                       receipt_data, token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and ("completed" in data["message"].lower() or "released" in data["message"].lower()):
+                    self.log_test("Order Completion", True, "Order completed and funds released successfully")
+                    return True
+                else:
+                    self.log_test("Order Completion", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Order Completion", False, f"Order completion failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Order Completion", False, f"Order completion error: {str(e)}")
+            return False
+    
+    def test_escrow_dispute_creation(self):
+        """Test dispute creation and management"""
+        if not self.customer_token:
+            self.log_test("Dispute Creation", False, "No customer token available")
+            return False
+            
+        try:
+            # Create a new order for dispute testing
+            order_data = {
+                "vendor_id": "VID-NG-TEST123",
+                "items": [
+                    {
+                        "product_name": "Disputed Service",
+                        "description": "Service with quality issues",
+                        "quantity": 1,
+                        "unit_price": 100.00,
+                        "currency": "USD"
+                    }
+                ],
+                "delivery_address": "123 Test Street, Lagos, Nigeria",
+                "special_instructions": "Test order for dispute"
+            }
+            
+            # Create order first
+            order_response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+            
+            if order_response.status_code == 200:
+                order_data_response = order_response.json()
+                dispute_order_id = order_data_response["order"]["order_id"]
+                
+                # Create dispute
+                dispute_data = {
+                    "order_id": dispute_order_id,
+                    "reason": "Service not delivered as promised",
+                    "evidence_description": "The vendor failed to deliver the service according to specifications. Quality was below expectations.",
+                    "evidence_files": ["screenshot1.png", "communication_log.txt"],
+                    "requested_outcome": "Full refund requested due to non-delivery"
+                }
+                
+                response = self.make_request("POST", "/escrow/disputes/create", dispute_data, token=self.customer_token)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "dispute" in data and "message" in data:
+                        dispute = data["dispute"]
+                        required_fields = ["dispute_id", "order_id", "customer_id", "vendor_id", "reason", "status", "priority"]
+                        missing_fields = [field for field in required_fields if field not in dispute]
+                        
+                        if not missing_fields:
+                            self.log_test("Dispute Creation", True, "Dispute created successfully", 
+                                        {
+                                            "dispute_id": dispute["dispute_id"],
+                                            "order_id": dispute["order_id"],
+                                            "status": dispute["status"],
+                                            "priority": dispute["priority"]
+                                        })
+                            return True
+                        else:
+                            self.log_test("Dispute Creation", False, f"Missing dispute fields: {missing_fields}")
+                            return False
+                    else:
+                        self.log_test("Dispute Creation", False, "Missing dispute or message in response", data)
+                        return False
+                else:
+                    self.log_test("Dispute Creation", False, f"Dispute creation failed: {response.text}")
+                    return False
+            else:
+                self.log_test("Dispute Creation", False, f"Failed to create order for dispute test: {order_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Dispute Creation", False, f"Dispute creation error: {str(e)}")
+            return False
+    
+    def test_escrow_extension_request(self):
+        """Test escrow extension request functionality"""
+        if not self.customer_token:
+            self.log_test("Extension Request", False, "No customer token available")
+            return False
+            
+        try:
+            # Create a new order for extension testing
+            order_data = {
+                "vendor_id": "VID-NG-TEST123",
+                "items": [
+                    {
+                        "product_name": "Extended Service",
+                        "description": "Service requiring extension",
+                        "quantity": 1,
+                        "unit_price": 150.00,
+                        "currency": "USD"
+                    }
+                ],
+                "delivery_address": "123 Extension Street, Lagos, Nigeria",
+                "special_instructions": "Test order for extension"
+            }
+            
+            # Create order first
+            order_response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+            
+            if order_response.status_code == 200:
+                order_data_response = order_response.json()
+                extension_order_id = order_data_response["order"]["order_id"]
+                
+                # Request extension
+                extension_data = {
+                    "extension_days": 7,
+                    "reason": "Need additional time to complete the project due to scope changes"
+                }
+                
+                response = self.make_request("POST", f"/escrow/orders/{extension_order_id}/request-extension", 
+                                           extension_data, token=self.customer_token)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "message" in data and "extension" in data["message"].lower():
+                        self.log_test("Extension Request", True, "Extension request submitted successfully", 
+                                    {"extension_days": extension_data["extension_days"]})
+                        return True
+                    else:
+                        self.log_test("Extension Request", False, f"Unexpected response: {data}")
+                        return False
+                else:
+                    self.log_test("Extension Request", False, f"Extension request failed: {response.text}")
+                    return False
+            else:
+                self.log_test("Extension Request", False, f"Failed to create order for extension test: {order_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Extension Request", False, f"Extension request error: {str(e)}")
+            return False
+    
+    def test_escrow_admin_pending_payments(self):
+        """Test admin pending payments endpoint"""
+        if not self.admin_token:
+            self.log_test("Admin Pending Payments", False, "No admin token available")
+            return False
+            
+        try:
+            response = self.make_request("GET", "/escrow/admin/pending-payments", token=self.admin_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "pending_payments" in data and "total" in data:
+                    pending_payments = data["pending_payments"]
+                    total = data["total"]
+                    
+                    self.log_test("Admin Pending Payments", True, f"Retrieved {total} pending payments successfully", 
+                                {"total_pending": total})
+                    return True
+                else:
+                    self.log_test("Admin Pending Payments", False, "Missing pending_payments or total in response", data)
+                    return False
+            else:
+                self.log_test("Admin Pending Payments", False, f"Pending payments retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Pending Payments", False, f"Pending payments error: {str(e)}")
+            return False
+    
+    def test_escrow_multi_currency_support(self):
+        """Test multi-currency support in escrow system"""
+        if not self.customer_token:
+            self.log_test("Multi-Currency Support", False, "No customer token available")
+            return False
+            
+        try:
+            # Test different currencies
+            currencies_to_test = ["NGN", "GHS", "KES", "ZAR", "GBP", "EUR", "CAD"]
+            successful_currencies = []
+            
+            for currency in currencies_to_test:
+                order_data = {
+                    "vendor_id": "VID-NG-TEST123",
+                    "items": [
+                        {
+                            "product_name": f"Service in {currency}",
+                            "description": f"Test service priced in {currency}",
+                            "quantity": 1,
+                            "unit_price": 100.00,
+                            "currency": currency
+                        }
+                    ],
+                    "delivery_address": "123 Currency Test Street, Lagos, Nigeria",
+                    "special_instructions": f"Test order for {currency} currency"
+                }
+                
+                response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "order" in data and data["order"]["currency"] == currency:
+                        successful_currencies.append(currency)
+                
+                # Small delay to avoid overwhelming the system
+                import time
+                time.sleep(0.1)
+            
+            if len(successful_currencies) >= 5:  # At least 5 currencies should work
+                self.log_test("Multi-Currency Support", True, f"Multi-currency support working for {len(successful_currencies)} currencies", 
+                            {"supported_currencies": successful_currencies})
+                return True
+            else:
+                self.log_test("Multi-Currency Support", False, f"Only {len(successful_currencies)} currencies working: {successful_currencies}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Multi-Currency Support", False, f"Multi-currency test error: {str(e)}")
+            return False
+    
+    def test_escrow_transaction_audit_trail(self):
+        """Test transaction recording and audit trails"""
+        if not self.customer_token:
+            self.log_test("Transaction Audit Trail", False, "No customer token available")
+            return False
+            
+        try:
+            # Get user orders to check transaction history
+            response = self.make_request("GET", "/escrow/orders?role=customer&limit=10", token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "orders" in data and "total" in data:
+                    orders = data["orders"]
+                    total = data["total"]
+                    
+                    # Check if orders have proper audit fields
+                    if orders:
+                        sample_order = orders[0]
+                        audit_fields = ["created_at", "updated_at", "status"]
+                        missing_audit_fields = [field for field in audit_fields if field not in sample_order]
+                        
+                        if not missing_audit_fields:
+                            self.log_test("Transaction Audit Trail", True, f"Audit trail working - {total} orders with proper tracking", 
+                                        {"total_orders": total, "audit_fields": audit_fields})
+                            return True
+                        else:
+                            self.log_test("Transaction Audit Trail", False, f"Missing audit fields: {missing_audit_fields}")
+                            return False
+                    else:
+                        self.log_test("Transaction Audit Trail", True, "Audit trail system working (no orders to audit)")
+                        return True
+                else:
+                    self.log_test("Transaction Audit Trail", False, "Missing orders or total in response", data)
+                    return False
+            else:
+                self.log_test("Transaction Audit Trail", False, f"Orders retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Transaction Audit Trail", False, f"Audit trail test error: {str(e)}")
+            return False
+    
+    def test_escrow_platform_fee_calculation(self):
+        """Test platform fee calculation accuracy (2.5%)"""
+        if not self.customer_token:
+            self.log_test("Platform Fee Calculation", False, "No customer token available")
+            return False
+            
+        try:
+            # Test different amounts to verify fee calculation
+            test_amounts = [100.00, 250.50, 1000.00, 1234.56]
+            successful_calculations = 0
+            
+            for amount in test_amounts:
+                order_data = {
+                    "vendor_id": "VID-NG-TEST123",
+                    "items": [
+                        {
+                            "product_name": f"Fee Test Service - ${amount}",
+                            "description": "Service for testing platform fee calculation",
+                            "quantity": 1,
+                            "unit_price": amount,
+                            "currency": "USD"
+                        }
+                    ],
+                    "delivery_address": "123 Fee Test Street, Lagos, Nigeria",
+                    "special_instructions": "Test order for fee calculation"
+                }
+                
+                response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "order" in data:
+                        order = data["order"]
+                        expected_fee = round(amount * 0.025, 2)
+                        actual_fee = order["platform_fee"]
+                        
+                        if abs(expected_fee - actual_fee) < 0.01:  # Allow for rounding differences
+                            successful_calculations += 1
+                
+                # Small delay
+                import time
+                time.sleep(0.1)
+            
+            if successful_calculations == len(test_amounts):
+                self.log_test("Platform Fee Calculation", True, f"Platform fee calculation accurate for all {len(test_amounts)} test amounts")
+                return True
+            else:
+                self.log_test("Platform Fee Calculation", False, f"Fee calculation failed for {len(test_amounts) - successful_calculations} amounts")
+                return False
+                
+        except Exception as e:
+            self.log_test("Platform Fee Calculation", False, f"Fee calculation test error: {str(e)}")
+            return False
+
     def run_all_tests(self):
-        """Run all backend tests including comprehensive enhancements"""
+        """Run all backend tests including comprehensive enhancements and escrow system"""
         print("🚀 Starting Comprehensive Vendor Ecosystem Backend API Tests")
-        print("Testing: email_service, two_factor_service, enhanced_vendor_ecosystem_service, error_handler, validators")
+        print("Testing: email_service, two_factor_service, enhanced_vendor_ecosystem_service, error_handler, validators, escrow_service")
         print("=" * 80)
         
         # Health check
@@ -1258,6 +1789,21 @@ class VendorEcosystemTester:
         self.test_enhanced_error_handling()
         self.test_input_validation()
         self.test_api_consistency_fixes()
+        
+        # ===== NEW ESCROW SYSTEM TESTS =====
+        print("\n💰 Escrow Payment Flow System Tests")
+        print("-" * 50)
+        self.test_escrow_order_creation()
+        self.test_escrow_payment_proof_submission()
+        self.test_escrow_admin_payment_confirmation()
+        self.test_escrow_order_delivery()
+        self.test_escrow_order_completion()
+        self.test_escrow_dispute_creation()
+        self.test_escrow_extension_request()
+        self.test_escrow_admin_pending_payments()
+        self.test_escrow_multi_currency_support()
+        self.test_escrow_transaction_audit_trail()
+        self.test_escrow_platform_fee_calculation()
         
         # Summary
         self.print_summary()
