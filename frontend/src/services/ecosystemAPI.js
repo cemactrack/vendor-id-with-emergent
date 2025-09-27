@@ -194,7 +194,7 @@ export const vendorEcosystemAPI = {
 
   getVendorDashboard: async () => {
     const response = await apiClient.get('/vendors/dashboard');
-    return response.dashboard;
+    return response;
   },
 
   updateVendorProfile: async (vendorId, updateData) => {
