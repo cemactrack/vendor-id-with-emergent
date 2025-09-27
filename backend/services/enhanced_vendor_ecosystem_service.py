@@ -240,8 +240,19 @@ class VendorEcosystemService:
             for integration in integrations:
                 integration.pop("_id", None)
             
-            # Get documents (from document service)
-            documents = []  # This would be populated from document service
+            # Get documents from document service
+            documents_cursor = self.db.vendor_documents.find({"vendor_id": user_id})
+            documents = await documents_cursor.to_list(length=None)
+            for document in documents:
+                document.pop("_id", None)
+                # Remove sensitive file path for security
+                document.pop("file_path", None)
+            
+            # Get recent security events
+            security_events_cursor = self.db.security_events.find({"user_id": user_id}).sort("created_at", -1).limit(5)
+            security_events = await security_events_cursor.to_list(length=None)
+            for event in security_events:
+                event.pop("_id", None)
             
             # Remove MongoDB ObjectId from profile
             profile.pop("_id", None)
@@ -254,6 +265,7 @@ class VendorEcosystemService:
                 "trust_events": trust_events,
                 "integrations": integrations,
                 "documents": documents,
+                "security_events": security_events,
                 "dashboard": profile  # For backward compatibility
             }
             
