@@ -1193,7 +1193,9 @@ class VendorEcosystemTester:
     
     def test_escrow_order_creation(self):
         """Test escrow order creation with multi-currency items"""
-        if not self.customer_token:
+        # Use user token as customer token
+        customer_token = self.user_token
+        if not customer_token:
             self.log_test("Escrow Order Creation", False, "No customer token available")
             return False
             
