@@ -454,10 +454,10 @@ class BiometricProcessor:
                 reference_face_quality=self._quality_score_to_enum(ref_quality),
                 comparison_face_quality=self._quality_score_to_enum(comp_quality),
                 processing_metadata={
-                    "face_distance": face_distance,
+                    "similarity_score": similarity_score,
                     "match_threshold": request.match_threshold,
-                    "ref_faces_found": len(ref_encodings),
-                    "comp_faces_found": len(comp_encodings)
+                    "ref_face_extracted": ref_face is not None,
+                    "comp_face_extracted": comp_face is not None
                 }
             )
             
