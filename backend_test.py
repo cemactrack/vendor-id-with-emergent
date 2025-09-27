@@ -1291,7 +1291,7 @@ class VendorEcosystemTester:
     def test_escrow_payment_proof_submission(self):
         """Test payment proof submission workflow"""
         customer_token = self.user_token
-        if not customer_token or not hasattr(self, 'test_payment_instruction_id'):
+        if not self.customer_token or not hasattr(self, 'test_payment_instruction_id'):
             self.log_test("Payment Proof Submission", False, "No customer token or payment instruction ID available")
             return False
             
