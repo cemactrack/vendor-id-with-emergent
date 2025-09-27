@@ -528,9 +528,9 @@
 
 ## test_plan:
   current_focus:
-    - "Rating system testing completed successfully"
-    - "All rating system endpoints functional"
-    - "Integration with escrow system working correctly"
+    - "Biometric Verification Workflow - Backend"
+    - "Biometric Verification UI"
+    - "Test biometric API endpoints and frontend integration"
   stuck_tasks:
     - "None currently - all major functionality working"
   test_all: false
