@@ -121,6 +121,7 @@ export const vendorEcosystemAPI = {
   },
 
   // Document Management
+  // Document Management  
   uploadDocument: async (formData) => {
     const response = await apiClient.post('/vendors/documents/upload', formData, {
       headers: {
