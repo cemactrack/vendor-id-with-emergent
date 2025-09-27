@@ -19,6 +19,7 @@ from models.vendor import VendorCreate, VendorUpdate, VendorResponse, VendorsRes
 from models.vendor_ecosystem import *
 from models.auth_models import *
 from models.escrow_models import *
+from models.biometric_models import *
 from services.vendor_service import VendorService
 from services.enhanced_vendor_ecosystem_service import VendorEcosystemService
 from services.auth_enhancement_service import AuthEnhancementService
