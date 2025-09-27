@@ -1578,6 +1578,282 @@ async def match_faces(
         logger.error(f"Face matching failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =====================================
+# Security & Fraud Detection Endpoints  
+# =====================================
+
+@security_router.post("/device/register")
+async def register_device(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Register a new device for security monitoring"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        device = await security_service.register_device(vendor_id, request)
+        
+        return {
+            "success": True,
+            "device": device.dict(),
+            "message": "Device registered successfully"
+        }
+    except Exception as e:
+        logger.error(f"Device registration failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.get("/dashboard")
+async def get_security_dashboard(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get comprehensive security dashboard"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        dashboard = await security_service.generate_security_dashboard(vendor_id)
+        
+        return {
+            "success": True,
+            "dashboard": dashboard.dict()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get security dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/consent/request")
+async def request_consent(
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for"),
+    user_agent: str = Header(None, alias="user-agent"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Request consent for data processing activities"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        consent_types = [ConsentType(ct) for ct in request.get("consent_types", [])]
+        
+        consents = await consent_service.request_consent(
+            vendor_id, consent_types, ip_address or "unknown", user_agent or "unknown"
+        )
+        
+        return {
+            "success": True,
+            "consents": [c.dict() for c in consents],
+            "message": "Consent requested successfully"
+        }
+    except Exception as e:
+        logger.error(f"Consent request failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/consent/grant")
+async def grant_consent(
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for"),
+    user_agent: str = Header(None, alias="user-agent"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Grant consent for specific processing activities"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        consent_ids = request.get("consent_ids", [])
+        
+        success = await consent_service.grant_consent(
+            consent_ids, vendor_id, ip_address or "unknown", user_agent or "unknown"
+        )
+        
+        return {
+            "success": success,
+            "message": "Consent granted successfully" if success else "Failed to grant consent"
+        }
+    except Exception as e:
+        logger.error(f"Consent granting failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/consent/withdraw")
+async def withdraw_consent(
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for"),
+    user_agent: str = Header(None, alias="user-agent"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Withdraw consent and optionally request data deletion"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        withdrawal_request = ConsentWithdrawalRequest(
+            vendor_id=vendor_id,
+            consent_ids=request.get("consent_ids", []),
+            withdrawal_reason=request.get("reason"),
+            data_deletion_requested=request.get("delete_data", True),
+            deletion_deadline=datetime.now(timezone.utc) + timedelta(days=30),
+            ip_address=ip_address or "unknown",
+            user_agent=user_agent or "unknown"
+        )
+        
+        withdrawal_id = await consent_service.withdraw_consent(withdrawal_request)
+        
+        return {
+            "success": True,
+            "withdrawal_id": withdrawal_id,
+            "message": "Consent withdrawn successfully. Data deletion will be processed within 30 days."
+        }
+    except Exception as e:
+        logger.error(f"Consent withdrawal failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.get("/compliance/report")
+async def get_compliance_report(
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate GDPR compliance report"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        report = await consent_service.generate_compliance_report(vendor_id)
+        
+        return {
+            "success": True,
+            "report": report.dict()
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate compliance report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/fraud/check-duplicates")
+async def check_duplicate_registration(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Check for duplicate registrations and fraud indicators"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        biometric_templates = request.get("biometric_templates", [])
+        documents = request.get("documents", [])
+        device_info = request.get("device_info", {})
+        
+        detection_result = await fraud_detection_service.check_duplicate_registration(
+            vendor_id, biometric_templates, documents, device_info
+        )
+        
+        return {
+            "success": True,
+            "detection_result": detection_result.dict(),
+            "message": f"Duplicate check completed. Risk score: {detection_result.risk_score.overall_score:.1f}"
+        }
+    except Exception as e:
+        logger.error(f"Duplicate check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/fraud/analyze-synthetic-identity")
+async def analyze_synthetic_identity(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Analyze profile for synthetic identity indicators"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        profile_data = request.get("profile_data", {})
+        registration_metadata = request.get("registration_metadata", {})
+        
+        indicators = await fraud_detection_service.analyze_synthetic_identity(
+            vendor_id, profile_data, registration_metadata
+        )
+        
+        return {
+            "success": True,
+            "synthetic_identity_indicators": indicators.dict(),
+            "message": f"Synthetic identity analysis completed. Confidence: {indicators.confidence_score:.2f}"
+        }
+    except Exception as e:
+        logger.error(f"Synthetic identity analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@security_router.post("/fraud/detect-review-manipulation")
+async def detect_review_manipulation(
+    current_user: dict = Depends(get_current_user)
+):
+    """Detect review manipulation and fake reviews"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        detection = await fraud_detection_service.detect_review_manipulation(vendor_id)
+        
+        return {
+            "success": True,
+            "manipulation_detection": detection.dict(),
+            "message": f"Review manipulation analysis completed. Confidence: {detection.confidence_score:.2f}"
+        }
+    except Exception as e:
+        logger.error(f"Review manipulation detection failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Rate limiting middleware
+@app.middleware("http")
+async def rate_limiting_middleware(request, call_next):
+    """Apply rate limiting to API requests"""
+    try:
+        # Extract vendor ID from JWT token if present
+        vendor_id = None
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            try:
+                token = auth_header.split(" ")[1]
+                payload = jwt.decode(token, jwt_secret, algorithms=["HS256"])
+                vendor_id = payload.get("vendor_id") or payload.get("user_id")
+            except:
+                pass
+        
+        if vendor_id:
+            # Check rate limit
+            endpoint = str(request.url.path)
+            ip_address = request.client.host
+            
+            if not await security_service.check_rate_limit(vendor_id, endpoint, ip_address):
+                return Response(
+                    content=json.dumps({"error": "Rate limit exceeded"}),
+                    status_code=429,
+                    media_type="application/json"
+                )
+        
+        response = await call_next(request)
+        return response
+        
+    except Exception as e:
+        logger.error(f"Rate limiting middleware error: {e}")
+        response = await call_next(request)
+        return response
+
+# Enhanced authentication with device trust
+async def get_current_user_with_device_check(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Enhanced authentication with device trust verification"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, jwt_secret, algorithms=["HS256"])
+        vendor_id = payload.get("vendor_id") or payload.get("user_id")
+        
+        if not vendor_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Check device trust (optional - can be made mandatory)
+        device_id = payload.get("device_id")
+        if device_id:
+            is_trusted = await security_service.verify_device_trust(device_id, vendor_id)
+            if not is_trusted:
+                logger.warning(f"Untrusted device access attempt: {device_id}")
+                # Could raise exception or just log warning
+        
+        return payload
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Authentication error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
 # Include routers
 app.include_router(api_router)
 app.include_router(auth_router)
