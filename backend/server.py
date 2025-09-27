@@ -38,6 +38,7 @@ from services.biometric_service import BiometricService
 from services.consent_service import ConsentService
 from services.security_service import SecurityService
 from services.fraud_detection_service import FraudDetectionService
+from services.trust_validation_service import TrustValidationService
 from utils.database_setup import DatabaseSetup
 
 ROOT_DIR = Path(__file__).parent
