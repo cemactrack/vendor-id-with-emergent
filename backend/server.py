@@ -46,6 +46,7 @@ api_router = APIRouter(prefix="/api")
 auth_router = APIRouter(prefix="/api/auth")
 vendor_router = APIRouter(prefix="/api/vendors")
 admin_router = APIRouter(prefix="/api/admin")
+escrow_router = APIRouter(prefix="/api/escrow")
 public_router = APIRouter(prefix="/api/public")
 
 # Initialize services
