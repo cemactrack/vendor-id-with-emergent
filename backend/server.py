@@ -853,6 +853,271 @@ async def admin_get_ocr_results(
         logger.error(f"Admin OCR results error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve OCR results")
 
+# ===== ESCROW ENDPOINTS =====
+
+# Order Management
+@escrow_router.post("/orders/create")
+async def create_order(
+    order_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new order with escrow"""
+    try:
+        from models.escrow_models import OrderCreate
+        
+        # Parse order data
+        order_create = OrderCreate(**order_data)
+        
+        # Create order
+        success, result, error = await escrow_service.create_order(current_user["user_id"], order_create)
+        
+        if success:
+            return {
+                "message": "Order created successfully",
+                "order": result["order"],
+                "escrow": result["escrow"],
+                "payment_instructions": result["payment_instructions"]
+            }
+        else:
+            raise HTTPException(status_code=400, detail=error)
+            
+    except Exception as e:
+        logger.error(f"Order creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create order")
+
+@escrow_router.get("/orders/{order_id}")
+async def get_order(
+    order_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get order details"""
+    try:
+        order = await escrow_service.get_order(order_id, current_user["user_id"])
+        
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        return {"order": order}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get order error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve order")
+
+@escrow_router.get("/orders")
+async def get_user_orders(
+    role: str = "customer",
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get user's orders"""
+    try:
+        orders = await escrow_service.get_user_orders(current_user["user_id"], role, limit)
+        
+        return {
+            "orders": orders,
+            "total": len(orders)
+        }
+        
+    except Exception as e:
+        logger.error(f"Get user orders error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve orders")
+
+# Payment Management
+@escrow_router.post("/payments/submit-proof")
+async def submit_payment_proof(
+    payment_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit payment proof"""
+    try:
+        from models.escrow_models import PaymentProofSubmission
+        
+        proof_data = PaymentProofSubmission(**payment_data)
+        success, message = await escrow_service.submit_payment_proof(current_user["user_id"], proof_data)
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        logger.error(f"Submit payment proof error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit payment proof")
+
+@escrow_router.post("/payments/{instruction_id}/confirm")
+async def confirm_payment(
+    instruction_id: str,
+    confirmation_data: dict,
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Admin confirms payment"""
+    try:
+        confirmed = confirmation_data.get("confirmed", False)
+        notes = confirmation_data.get("notes", "")
+        
+        success, message = await escrow_service.confirm_payment(
+            current_user["user_id"], instruction_id, confirmed, notes
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        logger.error(f"Confirm payment error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to confirm payment")
+
+# Order Fulfillment
+@escrow_router.post("/orders/{order_id}/delivered")
+async def mark_order_delivered(
+    order_id: str,
+    delivery_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Vendor marks order as delivered"""
+    try:
+        delivery_notes = delivery_data.get("delivery_notes", "")
+        
+        success, message = await escrow_service.mark_order_delivered(
+            current_user.get("vendor_id", current_user["user_id"]), order_id, delivery_notes
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        logger.error(f"Mark delivered error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark order as delivered")
+
+@escrow_router.post("/orders/{order_id}/confirm-receipt")
+async def confirm_order_receipt(
+    order_id: str,
+    receipt_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Customer confirms order receipt"""
+    try:
+        satisfaction_rating = receipt_data.get("satisfaction_rating", 5)
+        
+        success, message = await escrow_service.confirm_order_receipt(
+            current_user["user_id"], order_id, satisfaction_rating
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        logger.error(f"Confirm receipt error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to confirm order receipt")
+
+# Extension Requests
+@escrow_router.post("/orders/{order_id}/request-extension")
+async def request_extension(
+    order_id: str,
+    extension_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Request escrow extension"""
+    try:
+        from models.escrow_models import EscrowExtensionRequest
+        
+        # Determine requester type
+        requester_type = "vendor" if current_user.get("vendor_id") else "customer"
+        
+        extension_request = EscrowExtensionRequest(
+            order_id=order_id,
+            requested_by=current_user["user_id"],
+            requester_type=requester_type,
+            **extension_data
+        )
+        
+        success, message = await escrow_service.request_extension(
+            current_user["user_id"], order_id, extension_request
+        )
+        
+        if success:
+            return {"message": message}
+        else:
+            raise HTTPException(status_code=400, detail=message)
+            
+    except Exception as e:
+        logger.error(f"Request extension error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to request extension")
+
+# Dispute Management
+@escrow_router.post("/disputes/create")
+async def create_dispute(
+    dispute_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a dispute"""
+    try:
+        from models.escrow_models import DisputeCreate
+        
+        dispute_create = DisputeCreate(**dispute_data)
+        
+        success, result, error = await escrow_service.create_dispute(
+            current_user["user_id"], dispute_create
+        )
+        
+        if success:
+            return {
+                "message": "Dispute created successfully",
+                "dispute": result
+            }
+        else:
+            raise HTTPException(status_code=400, detail=error)
+            
+    except Exception as e:
+        logger.error(f"Create dispute error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create dispute")
+
+# Admin Endpoints
+@escrow_router.get("/admin/pending-payments")
+async def get_pending_payments(
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Get pending payment confirmations"""
+    try:
+        payments = await escrow_service.get_pending_payment_confirmations()
+        
+        return {
+            "pending_payments": payments,
+            "total": len(payments)
+        }
+        
+    except Exception as e:
+        logger.error(f"Get pending payments error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve pending payments")
+
+@escrow_router.get("/admin/dashboard")
+async def get_escrow_dashboard(
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Get escrow dashboard statistics"""
+    try:
+        # This would be implemented in the escrow service
+        stats = {
+            "total_orders": 0,
+            "pending_payments": 0,
+            "active_escrows": 0,
+            "open_disputes": 0,
+            "funds_held": 0.0
+        }
+        
+        return {"dashboard": stats}
+        
+    except Exception as e:
+        logger.error(f"Get escrow dashboard error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
+
 # Legacy endpoints for backward compatibility
 @api_router.get("/vendors", response_model=VendorsResponse)
 async def get_legacy_vendors(
