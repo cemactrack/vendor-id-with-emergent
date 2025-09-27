@@ -898,6 +898,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_db_setup():
+    """Setup database indexes and collections on startup"""
+    try:
+        await db_setup.setup_database()
+        logger.info("Database setup completed on startup")
+    except Exception as e:
+        logger.error(f"Database setup failed on startup: {e}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
