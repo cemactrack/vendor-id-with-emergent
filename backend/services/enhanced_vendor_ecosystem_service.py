@@ -177,9 +177,9 @@ class VendorEcosystemService:
             profile_data.business_name,
             profile_data.business_description,
             profile_data.business_address,
-            profile_data.website,
+            getattr(profile_data, 'website', None),
             profile_data.category,
-            profile_data.registration_number
+            getattr(profile_data, 'registration_number', None)
         ]
         
         completed_fields = sum(1 for field in fields if field and str(field).strip())
