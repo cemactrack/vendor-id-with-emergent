@@ -181,6 +181,7 @@ export const vendorEcosystemAPI = {
     });
     return response;
   },
+  // Vendor Profile Management
   createVendorProfile: async (profileData) => {
     const response = await apiClient.post('/vendors/profile', profileData);
     return response.profile;
@@ -199,17 +200,6 @@ export const vendorEcosystemAPI = {
   updateVendorProfile: async (vendorId, updateData) => {
     const response = await apiClient.put(`/vendors/profile/${vendorId}`, updateData);
     return response.profile;
-  },
-
-  // Document Management
-  uploadDocument: async (documentData) => {
-    const response = await apiClient.post('/vendors/documents', documentData);
-    return response.document;
-  },
-
-  getVendorDocuments: async () => {
-    const response = await apiClient.get('/vendors/documents');
-    return response.documents;
   },
 
   // Service Listings
