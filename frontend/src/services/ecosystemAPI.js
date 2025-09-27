@@ -418,5 +418,78 @@ export const vendorEcosystemAPI = {
   getOCRResultsByProcessingId: async (processingId) => {
     const response = await apiClient.get(`/admin/ocr/results/${processingId}`);
     return response.ocr_results;
+  },
+
+  // ===== ESCROW PAYMENT SYSTEM =====
+
+  // Order Management
+  createEscrowOrder: async (orderData) => {
+    const response = await apiClient.post('/escrow/orders/create', orderData);
+    return response;
+  },
+
+  getEscrowOrder: async (orderId) => {
+    const response = await apiClient.get(`/escrow/orders/${orderId}`);
+    return response.order;
+  },
+
+  getUserOrders: async (role = 'customer', limit = 50) => {
+    const response = await apiClient.get(`/escrow/orders?role=${role}&limit=${limit}`);
+    return response;
+  },
+
+  // Payment Management
+  submitPaymentProof: async (paymentData) => {
+    const response = await apiClient.post('/escrow/payments/submit-proof', paymentData);
+    return response;
+  },
+
+  confirmPayment: async (instructionId, confirmed, notes = '') => {
+    const response = await apiClient.post(`/escrow/payments/${instructionId}/confirm`, {
+      confirmed,
+      notes
+    });
+    return response;
+  },
+
+  // Order Fulfillment
+  markOrderDelivered: async (orderId, deliveryNotes = '') => {
+    const response = await apiClient.post(`/escrow/orders/${orderId}/delivered`, {
+      delivery_notes: deliveryNotes
+    });
+    return response;
+  },
+
+  confirmOrderReceipt: async (orderId, satisfactionRating = 5) => {
+    const response = await apiClient.post(`/escrow/orders/${orderId}/confirm-receipt`, {
+      satisfaction_rating: satisfactionRating
+    });
+    return response;
+  },
+
+  // Extension Requests
+  requestEscrowExtension: async (orderId, extensionDays, reason) => {
+    const response = await apiClient.post(`/escrow/orders/${orderId}/request-extension`, {
+      extension_days: extensionDays,
+      reason
+    });
+    return response;
+  },
+
+  // Dispute Management
+  createDispute: async (disputeData) => {
+    const response = await apiClient.post('/escrow/disputes/create', disputeData);
+    return response;
+  },
+
+  // Admin Escrow Management
+  getPendingPayments: async () => {
+    const response = await apiClient.get('/escrow/admin/pending-payments');
+    return response;
+  },
+
+  getEscrowDashboard: async () => {
+    const response = await apiClient.get('/escrow/admin/dashboard');
+    return response.dashboard;
   }
 };
