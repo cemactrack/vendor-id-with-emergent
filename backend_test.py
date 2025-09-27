@@ -1245,8 +1245,22 @@ class VendorEcosystemTester:
             return False
             
         try:
-            # Get vendor ID from token or use test vendor ID
-            test_vendor_id = "test-vendor-123"  # Use a test vendor ID
+            # Get vendor ID from dashboard first
+            dashboard_response = self.make_request("GET", "/vendors/dashboard", token=self.vendor_token)
+            if dashboard_response.status_code == 200:
+                dashboard_data = dashboard_response.json()
+                if "dashboard" in dashboard_data and "profile" in dashboard_data["dashboard"]:
+                    test_vendor_id = dashboard_data["dashboard"]["profile"]["vendor_id"]
+                else:
+                    # Use user_id as fallback
+                    import jwt
+                    payload = jwt.decode(self.vendor_token, options={"verify_signature": False})
+                    test_vendor_id = payload.get("user_id", "test-vendor-123")
+            else:
+                # Use user_id as fallback
+                import jwt
+                payload = jwt.decode(self.vendor_token, options={"verify_signature": False})
+                test_vendor_id = payload.get("user_id", "test-vendor-123")
             
             response = self.make_request("GET", f"/biometric/verification/status/{test_vendor_id}", token=self.vendor_token)
             
