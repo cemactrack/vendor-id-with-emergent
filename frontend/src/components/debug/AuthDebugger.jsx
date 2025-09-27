@@ -28,6 +28,23 @@ const AuthDebugger = () => {
     try {
       const result = await login('testvendor@example.com', 'testpassword123');
       setTestLoginStatus(`Login result: ${JSON.stringify(result)}`);
+      
+      // Refresh debug info after login attempt
+      setTimeout(() => {
+        const savedToken = localStorage.getItem('vendor_ecosystem_token');
+        const savedUser = localStorage.getItem('vendor_ecosystem_user');
+        const regularToken = localStorage.getItem('token');
+        
+        setDebugInfo({
+          savedToken: savedToken ? savedToken.substring(0, 20) + '...' : 'null',
+          savedUser: savedUser ? JSON.parse(savedUser) : null,
+          regularToken: regularToken ? regularToken.substring(0, 20) + '...' : 'null',
+          contextUser: user,
+          contextToken: token ? token.substring(0, 20) + '...' : 'null',
+          isAuthenticated,
+          loading
+        });
+      }, 1000);
     } catch (error) {
       setTestLoginStatus(`Login error: ${error.message}`);
     }
