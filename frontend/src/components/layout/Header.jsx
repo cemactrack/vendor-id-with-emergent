@@ -41,6 +41,7 @@ const Header = () => {
     { name: 'Dashboard', href: '/dashboard', icon: User },
     { name: 'Documents', href: '/documents', icon: Eye },
     { name: 'OCR Processing', href: '/ocr-processing', icon: Search },
+    { name: 'Escrow & Orders', href: '/escrow', icon: CreditCard },
     { name: 'Security Settings', href: '/security-settings', icon: Lock },
     { name: 'Help & Support', href: '/help', icon: HelpCircle }
   ];
