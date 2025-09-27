@@ -27,6 +27,7 @@ from services.qr_barcode_service import QRBarcodeService
 from services.upload_service import UploadService
 from services.template_service import TemplateService
 from services.ocr_service import DocumentOCRService
+from utils.database_setup import DatabaseSetup
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
