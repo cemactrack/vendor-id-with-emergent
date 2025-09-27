@@ -2060,6 +2060,325 @@ async def enhance_vendor_profile(
         logger.error(f"Profile enhancement failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =====================================
+# Profile Management Endpoints
+# =====================================
+
+@profile_router.put("/update")
+async def update_vendor_profile(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update vendor profile with comprehensive information"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first to get actual vendor_id
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        # Create update request
+        update_request = ProfileUpdateRequest(**request)
+        
+        # Update profile
+        result = await profile_management_service.update_vendor_profile(actual_vendor_id, update_request)
+        
+        return {
+            "success": result.success,
+            "updated_fields": result.updated_fields,
+            "validation_errors": result.validation_errors,
+            "new_completion_score": result.new_completion_score,
+            "new_trust_score": result.new_trust_score,
+            "badges_earned": result.badges_earned,
+            "message": result.message
+        }
+    except Exception as e:
+        logger.error(f"Profile update failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.get("/services")
+async def get_vendor_services(
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get vendor services with optional status filtering"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        services_response = await profile_management_service.get_vendor_services(actual_vendor_id, status)
+        
+        return {
+            "success": True,
+            "services": [service.dict() for service in services_response.services],
+            "total_count": services_response.total_count,
+            "active_count": services_response.active_count,
+            "categories": services_response.categories
+        }
+    except Exception as e:
+        logger.error(f"Failed to get vendor services: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.post("/services")
+async def create_service_offering(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create new service offering"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        # Create service offering
+        service = ServiceOffering(**request)
+        created_service = await profile_management_service.create_service_offering(actual_vendor_id, service)
+        
+        return {
+            "success": True,
+            "service": created_service.dict(),
+            "message": "Service offering created successfully"
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Failed to create service offering: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.put("/services/{service_id}")
+async def update_service_offering(
+    service_id: str,
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update existing service offering"""
+    try:
+        # Verify service belongs to current user
+        service = await db.service_offerings.find_one({"service_id": service_id})
+        if not service:
+            raise HTTPException(status_code=404, detail="Service not found")
+        
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": current_user.get("vendor_id") or current_user.get("user_id")})
+        if not vendor_profile or service["vendor_id"] != vendor_profile["vendor_id"]:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Update service
+        success = await profile_management_service.update_service_offering(service_id, request)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Service offering updated successfully"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Failed to update service offering")
+            
+    except Exception as e:
+        logger.error(f"Failed to update service offering: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.delete("/services/{service_id}")
+async def delete_service_offering(
+    service_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete service offering (soft delete)"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        success = await profile_management_service.delete_service_offering(service_id, actual_vendor_id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Service offering deleted successfully"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Failed to delete service offering")
+            
+    except Exception as e:
+        logger.error(f"Failed to delete service offering: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.get("/inquiries")
+async def get_vendor_inquiries(
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get service inquiries for vendor"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        inquiries = await profile_management_service.get_vendor_inquiries(actual_vendor_id, status)
+        
+        return {
+            "success": True,
+            "inquiries": [inquiry.dict() for inquiry in inquiries],
+            "count": len(inquiries)
+        }
+    except Exception as e:
+        logger.error(f"Failed to get vendor inquiries: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.get("/analytics")
+async def get_vendor_analytics(
+    period: str = "monthly",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get business analytics for vendor"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        if period not in ["daily", "weekly", "monthly"]:
+            raise HTTPException(status_code=400, detail="Invalid period. Use daily, weekly, or monthly")
+        
+        analytics = await profile_management_service.generate_analytics(actual_vendor_id, period)
+        
+        return {
+            "success": True,
+            "analytics": analytics.dict(),
+            "message": f"Analytics generated for {period} period"
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.post("/visit")
+async def track_profile_visit(
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for"),
+    user_agent: str = Header(None, alias="user-agent")
+):
+    """Track profile visit for analytics (public endpoint)"""
+    try:
+        vendor_id = request.get("vendor_id")
+        if not vendor_id:
+            raise HTTPException(status_code=400, detail="vendor_id is required")
+        
+        visit_data = {
+            "ip_address": ip_address or "unknown",
+            "user_agent": user_agent or "unknown",
+            "referrer": request.get("referrer"),
+            "pages_viewed": request.get("pages_viewed", []),
+            "time_on_site": request.get("time_on_site", 0)
+        }
+        
+        visit = await profile_management_service.track_profile_visit(vendor_id, visit_data)
+        
+        return {
+            "success": True,
+            "visit_tracked": True,
+            "visit_id": visit.visit_id
+        }
+    except Exception as e:
+        logger.error(f"Failed to track profile visit: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@profile_router.post("/contact")
+async def submit_contact_form(
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for"),
+    user_agent: str = Header(None, alias="user-agent")
+):
+    """Submit contact form (public endpoint)"""
+    try:
+        contact_submission = ContactFormSubmission(
+            vendor_id=request.get("vendor_id"),
+            name=request.get("name"),
+            email=request.get("email"),
+            phone=request.get("phone"),
+            subject=request.get("subject"),
+            message=request.get("message"),
+            ip_address=ip_address or "unknown",
+            user_agent=user_agent or "unknown"
+        )
+        
+        # Store contact submission
+        submission_dict = contact_submission.dict()
+        await db.contact_form_submissions.insert_one(submission_dict)
+        submission_dict.pop("_id", None)
+        
+        return {
+            "success": True,
+            "submission_id": contact_submission.submission_id,
+            "message": "Contact form submitted successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to submit contact form: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Public service inquiry endpoint
+@profile_router.post("/services/{service_id}/inquire")
+async def submit_service_inquiry(
+    service_id: str,
+    request: dict,
+    ip_address: str = Header(None, alias="x-forwarded-for")
+):
+    """Submit inquiry for a specific service (public endpoint)"""
+    try:
+        # Get service to find vendor_id
+        service = await db.service_offerings.find_one({"service_id": service_id})
+        if not service:
+            raise HTTPException(status_code=404, detail="Service not found")
+        
+        inquiry = ServiceInquiry(
+            vendor_id=service["vendor_id"],
+            service_id=service_id,
+            customer_name=request.get("customer_name"),
+            customer_email=request.get("customer_email"),
+            customer_phone=request.get("customer_phone"),
+            inquiry_message=request.get("inquiry_message"),
+            budget_range=request.get("budget_range"),
+            timeline=request.get("timeline"),
+            project_details=request.get("project_details", {})
+        )
+        
+        created_inquiry = await profile_management_service.submit_service_inquiry(inquiry)
+        
+        return {
+            "success": True,
+            "inquiry_id": created_inquiry.inquiry_id,
+            "message": "Service inquiry submitted successfully"
+        }
+    except Exception as e:
+        logger.error(f"Failed to submit service inquiry: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Rate limiting middleware
 @app.middleware("http")
 async def rate_limiting_middleware(request, call_next):
