@@ -2807,6 +2807,18 @@ class VendorEcosystemTester:
         self.test_duplicate_rating_prevention()
         self.test_rating_validation()
         
+        # ===== BIOMETRIC VERIFICATION SYSTEM TESTS =====
+        print("\n🔐 Biometric Verification System Tests")
+        print("-" * 50)
+        self.test_biometric_verification_start()
+        self.test_biometric_verification_status()
+        self.test_biometric_document_analysis()
+        self.test_biometric_liveness_challenge()
+        self.test_biometric_liveness_response()
+        self.test_biometric_face_matching()
+        self.test_biometric_error_handling()
+        self.test_biometric_authentication_security()
+        
         # Summary
         self.print_summary()
     
