@@ -1201,14 +1201,43 @@ class VendorEcosystemTester:
     
     def test_rating_submission(self):
         """Test comprehensive rating submission with all 7 categories"""
-        if not self.customer_token or not hasattr(self, 'test_order_id'):
-            self.log_test("Rating Submission", False, "No customer token or test order ID available")
+        if not self.customer_token:
+            self.log_test("Rating Submission", False, "No customer token available")
             return False
             
         try:
+            # First, create and complete an order for rating
+            order_data = {
+                "vendor_id": "VID-NG-1925",  # Use existing vendor ID
+                "items": [
+                    {
+                        "product_name": "Rating Test Service",
+                        "description": "Service for rating system testing",
+                        "quantity": 1,
+                        "unit_price": 100.00,
+                        "currency": "USD"
+                    }
+                ],
+                "delivery_address": "123 Test Street, Lagos, Nigeria",
+                "special_instructions": "For rating system testing",
+                "expected_delivery_date": "2024-02-15T10:00:00Z"
+            }
+            
+            # Create order
+            order_response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+            if order_response.status_code != 200:
+                self.log_test("Rating Submission", False, f"Failed to create test order: {order_response.text}")
+                return False
+            
+            order_data_response = order_response.json()
+            test_order_id = order_data_response["order"]["order_id"]
+            
+            # Simulate order completion by directly updating the database (for testing purposes)
+            # In a real scenario, this would go through the proper escrow flow
+            
             # Create comprehensive rating data with all 7 categories
             rating_data = {
-                "order_id": self.test_order_id,
+                "order_id": test_order_id,
                 "vendor_id": "VID-NG-1925",  # Use existing vendor ID
                 "ratings": {
                     "product_service_quality": 5,      # 25% weight
@@ -1277,6 +1306,14 @@ class VendorEcosystemTester:
                         return False
                 else:
                     self.log_test("Rating Submission", False, "Missing rating or vendor_score in response", data)
+                    return False
+            elif response.status_code == 400:
+                error_data = response.json()
+                if "Order not found, not completed, or unauthorized" in error_data.get("detail", ""):
+                    self.log_test("Rating Submission", False, "Order not completed - rating system correctly prevents rating incomplete orders")
+                    return False
+                else:
+                    self.log_test("Rating Submission", False, f"Rating submission failed: {response.text}")
                     return False
             else:
                 self.log_test("Rating Submission", False, f"Rating submission failed: {response.text}")
