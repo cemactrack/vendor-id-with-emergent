@@ -57,6 +57,7 @@ qr_barcode_service = QRBarcodeService()
 upload_service = UploadService()
 template_service = TemplateService()
 ocr_service = DocumentOCRService(mongo_url)
+db_setup = DatabaseSetup(db)
 
 # Security
 security = HTTPBearer()
