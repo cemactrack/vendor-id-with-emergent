@@ -33,6 +33,14 @@ class VendorEcosystemTester:
         self.test_results = []
         self.test_document_id = None
         self.ocr_processing_id = None
+        self.test_order_id = None
+        self.test_escrow_id = None
+        self.test_payment_instruction_id = None
+    
+    @property
+    def customer_token(self):
+        """Use user_token as customer_token for escrow tests"""
+        return self.user_token
         
     def log_test(self, test_name: str, success: bool, message: str, details: Dict[str, Any] = None):
         """Log test result"""
