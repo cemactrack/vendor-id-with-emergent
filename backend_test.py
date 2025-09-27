@@ -1428,7 +1428,7 @@ class VendorEcosystemTester:
         try:
             # Create a new order for dispute testing
             order_data = {
-                "vendor_id": "VID-NG-TEST123",
+                "vendor_id": "VID-NG-1925",
                 "items": [
                     {
                         "product_name": "Disputed Service",
@@ -1502,7 +1502,7 @@ class VendorEcosystemTester:
         try:
             # Create a new order for extension testing
             order_data = {
-                "vendor_id": "VID-NG-TEST123",
+                "vendor_id": "VID-NG-1925",
                 "items": [
                     {
                         "product_name": "Extended Service",
@@ -1594,7 +1594,7 @@ class VendorEcosystemTester:
             
             for currency in currencies_to_test:
                 order_data = {
-                    "vendor_id": "VID-NG-TEST123",
+                    "vendor_id": "VID-NG-1925",
                     "items": [
                         {
                             "product_name": f"Service in {currency}",
@@ -1687,7 +1687,7 @@ class VendorEcosystemTester:
             
             for amount in test_amounts:
                 order_data = {
-                    "vendor_id": "VID-NG-TEST123",
+                    "vendor_id": "VID-NG-1925",
                     "items": [
                         {
                             "product_name": f"Fee Test Service - ${amount}",
