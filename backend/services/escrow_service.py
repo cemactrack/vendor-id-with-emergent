@@ -189,6 +189,9 @@ class EscrowService:
         escrow_dict = escrow.dict()
         await self.escrow_collection.insert_one(escrow_dict)
         
+        # Remove MongoDB _id field for JSON serialization
+        escrow_dict.pop('_id', None)
+        
         return escrow_dict
     
     # ===== PAYMENT MANAGEMENT =====
