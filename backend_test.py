@@ -1208,7 +1208,7 @@ class VendorEcosystemTester:
         try:
             # Create order with multi-currency items (should fail - all items must use same currency)
             order_data = {
-                "vendor_id": "VID-NG-TEST123",
+                "vendor_id": "VID-NG-1925",  # Use existing vendor ID
                 "items": [
                     {
                         "product_name": "Web Development Service",
