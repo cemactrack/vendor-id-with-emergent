@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Enhanced Backend API Testing Suite for Vendor Verification and Trust Ecosystem
+Comprehensive Backend API Testing Suite for Vendor Verification and Trust Ecosystem
 Tests all authentication including enhanced features: email verification, password reset, 2FA, security management
+Tests new services: email_service, two_factor_service, enhanced_vendor_ecosystem_service, error_handler, validators
 """
 
 import requests
@@ -16,11 +17,11 @@ import io
 
 # Configuration
 BACKEND_URL = "https://idecosystem.preview.emergentagent.com/api"
-TEST_USER_EMAIL = "enhanced.auth.test@example.com"
+TEST_USER_EMAIL = "comprehensive.test@example.com"
 TEST_USER_PASSWORD = "SecureTestPass123!"
-TEST_ADMIN_EMAIL = "admin.enhanced@vendorsecure.com"
+TEST_ADMIN_EMAIL = "admin.comprehensive@vendorsecure.com"
 TEST_ADMIN_PASSWORD = "AdminSecurePass123!"
-TEST_2FA_USER_EMAIL = "twofa.test@example.com"
+TEST_2FA_USER_EMAIL = "twofa.comprehensive@example.com"
 TEST_2FA_PASSWORD = "TwoFATestPass123!"
 
 class VendorEcosystemTester:
