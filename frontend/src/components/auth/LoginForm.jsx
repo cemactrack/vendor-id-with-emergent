@@ -18,6 +18,7 @@ const LoginForm = ({ onSuccess }) => {
   const [error, setError] = useState('');
   
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
