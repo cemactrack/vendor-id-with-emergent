@@ -289,13 +289,15 @@ class BiometricProcessor:
                     
                     frames_processed += 1
                     
-                    # Face detection
+                    # Face detection using MediaPipe
                     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    face_locations = face_recognition.face_locations(rgb_frame)
                     
-                    if face_locations:
-                        face_detected_frames += 1
-                        liveness_indicators["face_detected"] = True
+                    with self.mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+                        results = face_detection.process(rgb_frame)
+                        
+                        if results.detections:
+                            face_detected_frames += 1
+                            liveness_indicators["face_detected"] = True
                         
                         # Simple motion detection between frames
                         if frames_processed > 1:
