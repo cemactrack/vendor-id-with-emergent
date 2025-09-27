@@ -140,8 +140,8 @@ class BiometricProcessor:
                 tampering_detected=tampering_detected,
                 quality_score=quality_score,
                 processing_metadata={
-                    "image_dimensions": f"{width}x{height}",
-                    "faces_detected": len(face_locations),
+                    "image_dimensions": f"{cv_image.shape[1]}x{cv_image.shape[0]}",
+                    "faces_detected": 1 if face_extracted else 0,
                     "processing_time": datetime.now(timezone.utc).isoformat()
                 }
             )
