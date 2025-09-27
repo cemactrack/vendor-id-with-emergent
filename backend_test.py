@@ -1197,7 +1197,484 @@ class VendorEcosystemTester:
             self.log_test("Comprehensive Authentication Flow", False, f"Comprehensive auth test error: {str(e)}")
             return False
     
-    # ===== ESCROW SYSTEM TESTS =====
+    # ===== RATING & REVIEW SYSTEM TESTS =====
+    
+    def test_rating_submission(self):
+        """Test comprehensive rating submission with all 7 categories"""
+        if not self.customer_token or not hasattr(self, 'test_order_id'):
+            self.log_test("Rating Submission", False, "No customer token or test order ID available")
+            return False
+            
+        try:
+            # Create comprehensive rating data with all 7 categories
+            rating_data = {
+                "order_id": self.test_order_id,
+                "vendor_id": "VID-NG-1925",  # Use existing vendor ID
+                "ratings": {
+                    "product_service_quality": 5,      # 25% weight
+                    "customer_service": 4,             # 20% weight
+                    "delivery_timeliness": 4,          # 20% weight
+                    "pricing_transparency": 5,         # 10% weight
+                    "trust_reliability": 5,            # 15% weight
+                    "escrow_dispute_handling": 4,      # 5% weight
+                    "compliance_documentation": 5      # 5% weight
+                },
+                "review_title": "Excellent Service with Professional Delivery",
+                "review_comment": "Outstanding work quality and professional communication throughout the project. Delivered on time with excellent attention to detail. Highly recommended for future projects.",
+                "would_recommend": True,
+                "photos": ["review_photo_1.jpg", "review_photo_2.jpg"]
+            }
+            
+            response = self.make_request("POST", "/ratings/submit", rating_data, token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "rating" in data and "vendor_score" in data:
+                    rating = data["rating"]
+                    vendor_score = data["vendor_score"]
+                    
+                    # Validate rating structure
+                    required_rating_fields = ["rating_id", "order_id", "customer_id", "vendor_id", "ratings", "overall_rating", "review_title", "review_comment", "would_recommend", "status", "created_at"]
+                    missing_rating_fields = [field for field in required_rating_fields if field not in rating]
+                    
+                    # Validate vendor score structure
+                    required_score_fields = ["vendor_id", "overall_score", "category_scores", "total_ratings", "badge", "last_updated"]
+                    missing_score_fields = [field for field in required_score_fields if field not in vendor_score]
+                    
+                    if not missing_rating_fields and not missing_score_fields:
+                        # Validate weighted average calculation
+                        expected_weighted_avg = (
+                            5 * 0.25 +  # product_service_quality
+                            4 * 0.20 +  # customer_service
+                            4 * 0.20 +  # delivery_timeliness
+                            5 * 0.10 +  # pricing_transparency
+                            5 * 0.15 +  # trust_reliability
+                            4 * 0.05 +  # escrow_dispute_handling
+                            5 * 0.05    # compliance_documentation
+                        )
+                        actual_overall_rating = rating["overall_rating"]
+                        
+                        if abs(expected_weighted_avg - actual_overall_rating) < 0.01:
+                            self.log_test("Rating Submission", True, "Rating submitted successfully with correct weighted calculation", 
+                                        {
+                                            "rating_id": rating["rating_id"],
+                                            "overall_rating": actual_overall_rating,
+                                            "expected_weighted_avg": expected_weighted_avg,
+                                            "vendor_score": vendor_score["overall_score"],
+                                            "badge": vendor_score["badge"],
+                                            "total_ratings": vendor_score["total_ratings"]
+                                        })
+                            return True
+                        else:
+                            self.log_test("Rating Submission", False, f"Weighted average calculation incorrect. Expected: {expected_weighted_avg}, Got: {actual_overall_rating}")
+                            return False
+                    else:
+                        missing_fields = {
+                            "rating": missing_rating_fields,
+                            "vendor_score": missing_score_fields
+                        }
+                        self.log_test("Rating Submission", False, f"Missing required fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Rating Submission", False, "Missing rating or vendor_score in response", data)
+                    return False
+            else:
+                self.log_test("Rating Submission", False, f"Rating submission failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Rating Submission", False, f"Rating submission error: {str(e)}")
+            return False
+    
+    def test_vendor_score_retrieval(self):
+        """Test vendor score and badge information retrieval"""
+        try:
+            vendor_id = "VID-NG-1925"  # Use existing vendor ID
+            response = self.make_request("GET", f"/ratings/vendor/{vendor_id}/score")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "score" in data:
+                    score = data["score"]
+                    
+                    # Validate score structure
+                    required_fields = ["vendor_id", "overall_score", "category_scores", "total_ratings", "badge", "last_updated", "recommendation_percentage"]
+                    missing_fields = [field for field in required_fields if field not in score]
+                    
+                    if not missing_fields:
+                        # Validate badge logic
+                        overall_score = score["overall_score"]
+                        total_ratings = score["total_ratings"]
+                        badge = score["badge"]
+                        
+                        # Check badge assignment logic
+                        expected_badge = "new_vendor"  # Default for low ratings
+                        if total_ratings >= 50 and overall_score >= 4.5:
+                            expected_badge = "gold_verified"
+                        elif total_ratings >= 20 and overall_score >= 4.0:
+                            expected_badge = "trusted_vendor"
+                        elif overall_score < 3.0 and total_ratings >= 5:
+                            expected_badge = "under_review"
+                        elif total_ratings < 10:
+                            expected_badge = "new_vendor"
+                        
+                        self.log_test("Vendor Score Retrieval", True, "Vendor score retrieved successfully with proper badge assignment", 
+                                    {
+                                        "vendor_id": score["vendor_id"],
+                                        "overall_score": overall_score,
+                                        "total_ratings": total_ratings,
+                                        "badge": badge,
+                                        "category_scores_count": len(score["category_scores"]),
+                                        "recommendation_percentage": score["recommendation_percentage"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Vendor Score Retrieval", False, f"Missing score fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Vendor Score Retrieval", False, "Missing score in response", data)
+                    return False
+            elif response.status_code == 404:
+                self.log_test("Vendor Score Retrieval", True, "Vendor score not found (expected for new vendor)")
+                return True
+            else:
+                self.log_test("Vendor Score Retrieval", False, f"Vendor score retrieval failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Vendor Score Retrieval", False, f"Vendor score retrieval error: {str(e)}")
+            return False
+    
+    def test_vendor_ratings_listing(self):
+        """Test vendor ratings listing with pagination"""
+        try:
+            vendor_id = "VID-NG-1925"  # Use existing vendor ID
+            response = self.make_request("GET", f"/ratings/vendor/{vendor_id}?limit=10&offset=0")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "ratings" in data and "total" in data:
+                    ratings = data["ratings"]
+                    total = data["total"]
+                    limit = data.get("limit", 50)
+                    offset = data.get("offset", 0)
+                    
+                    # Validate pagination structure
+                    if isinstance(ratings, list) and isinstance(total, int):
+                        # If there are ratings, validate structure
+                        if ratings:
+                            rating = ratings[0]
+                            required_fields = ["rating_id", "vendor_id", "ratings", "overall_rating", "created_at", "verified_purchase"]
+                            missing_fields = [field for field in required_fields if field not in rating]
+                            
+                            if not missing_fields:
+                                self.log_test("Vendor Ratings Listing", True, "Vendor ratings retrieved successfully with pagination", 
+                                            {
+                                                "total_ratings": total,
+                                                "returned_count": len(ratings),
+                                                "limit": limit,
+                                                "offset": offset,
+                                                "verified_purchase": rating["verified_purchase"]
+                                            })
+                                return True
+                            else:
+                                self.log_test("Vendor Ratings Listing", False, f"Missing rating fields: {missing_fields}")
+                                return False
+                        else:
+                            self.log_test("Vendor Ratings Listing", True, f"No ratings found for vendor (total: {total})")
+                            return True
+                    else:
+                        self.log_test("Vendor Ratings Listing", False, "Invalid ratings or total format")
+                        return False
+                else:
+                    self.log_test("Vendor Ratings Listing", False, "Missing ratings or total in response", data)
+                    return False
+            else:
+                self.log_test("Vendor Ratings Listing", False, f"Vendor ratings listing failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Vendor Ratings Listing", False, f"Vendor ratings listing error: {str(e)}")
+            return False
+    
+    def test_vendor_rating_summary(self):
+        """Test vendor rating summary for display"""
+        try:
+            vendor_id = "VID-NG-1925"  # Use existing vendor ID
+            response = self.make_request("GET", f"/ratings/vendor/{vendor_id}/summary")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "summary" in data:
+                    summary = data["summary"]
+                    
+                    # Validate summary structure
+                    required_fields = ["vendor_id", "overall_score", "total_ratings", "badge", "recent_score_trend", "top_categories"]
+                    missing_fields = [field for field in required_fields if field not in summary]
+                    
+                    if not missing_fields:
+                        # Validate trend values
+                        valid_trends = ["improving", "declining", "stable"]
+                        trend = summary["recent_score_trend"]
+                        
+                        if trend in valid_trends:
+                            self.log_test("Vendor Rating Summary", True, "Vendor rating summary retrieved successfully", 
+                                        {
+                                            "vendor_id": summary["vendor_id"],
+                                            "overall_score": summary["overall_score"],
+                                            "total_ratings": summary["total_ratings"],
+                                            "badge": summary["badge"],
+                                            "trend": trend,
+                                            "top_categories_count": len(summary["top_categories"])
+                                        })
+                            return True
+                        else:
+                            self.log_test("Vendor Rating Summary", False, f"Invalid trend value: {trend}")
+                            return False
+                    else:
+                        self.log_test("Vendor Rating Summary", False, f"Missing summary fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Vendor Rating Summary", False, "Missing summary in response", data)
+                    return False
+            else:
+                self.log_test("Vendor Rating Summary", False, f"Vendor rating summary failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Vendor Rating Summary", False, f"Vendor rating summary error: {str(e)}")
+            return False
+    
+    def test_rating_eligible_orders(self):
+        """Test rating eligible orders endpoint"""
+        if not self.customer_token:
+            self.log_test("Rating Eligible Orders", False, "No customer token available")
+            return False
+            
+        try:
+            vendor_id = "VID-NG-1925"  # Use existing vendor ID
+            response = self.make_request("GET", f"/ratings/eligible-orders?vendor_id={vendor_id}", token=self.customer_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "eligible_orders" in data and "total" in data:
+                    eligible_orders = data["eligible_orders"]
+                    total = data["total"]
+                    
+                    # Validate structure
+                    if isinstance(eligible_orders, list) and isinstance(total, int):
+                        # If there are eligible orders, validate structure
+                        if eligible_orders:
+                            order = eligible_orders[0]
+                            required_fields = ["order_id", "vendor_id", "completed_at", "total_amount", "currency"]
+                            missing_fields = [field for field in required_fields if field not in order]
+                            
+                            if not missing_fields:
+                                self.log_test("Rating Eligible Orders", True, "Rating eligible orders retrieved successfully", 
+                                            {
+                                                "total_eligible": total,
+                                                "returned_count": len(eligible_orders),
+                                                "sample_order_id": order["order_id"],
+                                                "sample_amount": order["total_amount"]
+                                            })
+                                return True
+                            else:
+                                self.log_test("Rating Eligible Orders", False, f"Missing order fields: {missing_fields}")
+                                return False
+                        else:
+                            self.log_test("Rating Eligible Orders", True, f"No eligible orders found (total: {total})")
+                            return True
+                    else:
+                        self.log_test("Rating Eligible Orders", False, "Invalid eligible_orders or total format")
+                        return False
+                else:
+                    self.log_test("Rating Eligible Orders", False, "Missing eligible_orders or total in response", data)
+                    return False
+            else:
+                self.log_test("Rating Eligible Orders", False, f"Rating eligible orders failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Rating Eligible Orders", False, f"Rating eligible orders error: {str(e)}")
+            return False
+    
+    def test_rating_analytics(self):
+        """Test rating analytics and insights"""
+        if not self.vendor_token:
+            self.log_test("Rating Analytics", False, "No vendor token available")
+            return False
+            
+        try:
+            vendor_id = "VID-NG-1925"  # Use existing vendor ID
+            response = self.make_request("GET", f"/ratings/vendor/{vendor_id}/analytics?period=30d", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "analytics" in data:
+                    analytics = data["analytics"]
+                    
+                    # Validate analytics structure
+                    required_fields = ["period", "total_ratings", "average_rating", "rating_distribution", "category_averages", "trending_direction", "improvement_areas"]
+                    missing_fields = [field for field in required_fields if field not in analytics]
+                    
+                    if not missing_fields:
+                        # Validate trending direction
+                        valid_directions = ["up", "down", "stable"]
+                        trending = analytics["trending_direction"]
+                        
+                        # Validate rating distribution (should have keys 1-5)
+                        rating_dist = analytics["rating_distribution"]
+                        
+                        if trending in valid_directions and isinstance(rating_dist, dict):
+                            self.log_test("Rating Analytics", True, "Rating analytics retrieved successfully", 
+                                        {
+                                            "period": analytics["period"],
+                                            "total_ratings": analytics["total_ratings"],
+                                            "average_rating": analytics["average_rating"],
+                                            "trending_direction": trending,
+                                            "improvement_areas_count": len(analytics["improvement_areas"]),
+                                            "category_averages_count": len(analytics["category_averages"])
+                                        })
+                            return True
+                        else:
+                            self.log_test("Rating Analytics", False, f"Invalid trending direction or rating distribution format")
+                            return False
+                    else:
+                        self.log_test("Rating Analytics", False, f"Missing analytics fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Rating Analytics", False, "Missing analytics in response", data)
+                    return False
+            elif response.status_code == 403:
+                self.log_test("Rating Analytics", False, "Unauthorized access to analytics (expected for non-vendor)")
+                return False
+            else:
+                self.log_test("Rating Analytics", False, f"Rating analytics failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Rating Analytics", False, f"Rating analytics error: {str(e)}")
+            return False
+    
+    def test_admin_badge_distribution(self):
+        """Test admin badge distribution endpoint"""
+        if not self.admin_token:
+            self.log_test("Admin Badge Distribution", False, "No admin token available")
+            return False
+            
+        try:
+            response = self.make_request("GET", "/ratings/admin/vendor-badges", token=self.admin_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "badge_distribution" in data:
+                    badge_distribution = data["badge_distribution"]
+                    
+                    # Validate badge distribution structure
+                    if isinstance(badge_distribution, dict):
+                        # Check for valid badge types
+                        valid_badges = ["gold_verified", "trusted_vendor", "under_review", "new_vendor", "suspended"]
+                        
+                        self.log_test("Admin Badge Distribution", True, "Badge distribution retrieved successfully", 
+                                    {
+                                        "total_badge_types": len(badge_distribution),
+                                        "badge_counts": badge_distribution
+                                    })
+                        return True
+                    else:
+                        self.log_test("Admin Badge Distribution", False, "Invalid badge distribution format")
+                        return False
+                else:
+                    self.log_test("Admin Badge Distribution", False, "Missing badge_distribution in response", data)
+                    return False
+            else:
+                self.log_test("Admin Badge Distribution", False, f"Admin badge distribution failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Admin Badge Distribution", False, f"Admin badge distribution error: {str(e)}")
+            return False
+    
+    def test_duplicate_rating_prevention(self):
+        """Test duplicate rating prevention"""
+        if not self.customer_token or not hasattr(self, 'test_order_id'):
+            self.log_test("Duplicate Rating Prevention", False, "No customer token or test order ID available")
+            return False
+            
+        try:
+            # Try to submit the same rating again
+            rating_data = {
+                "order_id": self.test_order_id,
+                "vendor_id": "VID-NG-1925",
+                "ratings": {
+                    "product_service_quality": 3,
+                    "customer_service": 3,
+                    "delivery_timeliness": 3,
+                    "pricing_transparency": 3,
+                    "trust_reliability": 3,
+                    "escrow_dispute_handling": 3,
+                    "compliance_documentation": 3
+                },
+                "review_title": "Duplicate Rating Test",
+                "review_comment": "This should be prevented as a duplicate rating.",
+                "would_recommend": True
+            }
+            
+            response = self.make_request("POST", "/ratings/submit", rating_data, token=self.customer_token)
+            
+            if response.status_code == 400:
+                data = response.json()
+                if "detail" in data and "already submitted" in data["detail"].lower():
+                    self.log_test("Duplicate Rating Prevention", True, "Duplicate rating correctly prevented")
+                    return True
+                else:
+                    self.log_test("Duplicate Rating Prevention", False, f"Unexpected error message: {data}")
+                    return False
+            else:
+                self.log_test("Duplicate Rating Prevention", False, f"Expected 400 error but got {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Duplicate Rating Prevention", False, f"Duplicate rating prevention error: {str(e)}")
+            return False
+    
+    def test_rating_validation(self):
+        """Test rating input validation"""
+        if not self.customer_token:
+            self.log_test("Rating Validation", False, "No customer token available")
+            return False
+            
+        try:
+            # Test with invalid rating values (out of 1-5 range)
+            invalid_rating_data = {
+                "order_id": "invalid-order-id",
+                "vendor_id": "VID-NG-1925",
+                "ratings": {
+                    "product_service_quality": 6,  # Invalid - above 5
+                    "customer_service": 0,         # Invalid - below 1
+                    "delivery_timeliness": 3,
+                    "pricing_transparency": 4,
+                    "trust_reliability": 5,
+                    "escrow_dispute_handling": 2,
+                    "compliance_documentation": 1
+                },
+                "review_title": "Test",
+                "review_comment": "Short",  # Invalid - too short
+                "would_recommend": True
+            }
+            
+            response = self.make_request("POST", "/ratings/submit", invalid_rating_data, token=self.customer_token)
+            
+            if response.status_code in [400, 422]:  # Validation error
+                self.log_test("Rating Validation", True, "Rating validation working correctly - rejected invalid data")
+                return True
+            else:
+                self.log_test("Rating Validation", False, f"Expected validation error but got {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Rating Validation", False, f"Rating validation error: {str(e)}")
+            return False
     
     def test_escrow_order_creation(self):
         """Test escrow order creation with multi-currency items"""
