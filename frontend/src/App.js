@@ -257,6 +257,16 @@ const AppContent = () => {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/profile/edit" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProfileEditor />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
         
         <Route 
           path="/admin" 
