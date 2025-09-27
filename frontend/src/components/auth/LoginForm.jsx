@@ -38,13 +38,16 @@ const LoginForm = ({ onSuccess }) => {
       const result = await login(formData.email, formData.password);
       
       if (result.success) {
+        console.log('LoginForm: Login successful, navigating to dashboard');
+        navigate('/dashboard');
         if (onSuccess) {
           onSuccess(result.user);
         }
       } else {
-        setError(result.error);
+        setError(result.error || 'Login failed');
       }
     } catch (error) {
+      console.error('LoginForm: Login error:', error);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
