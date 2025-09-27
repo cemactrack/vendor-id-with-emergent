@@ -224,6 +224,28 @@ const AppContent = () => {
         />
         
         <Route 
+          path="/escrow" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <EscrowDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/escrow/create-order/:vendorId" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <OrderCreation />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
           path="/admin" 
           element={
             <ProtectedRoute requiredRole="verification_officer">
