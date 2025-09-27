@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginForm = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
