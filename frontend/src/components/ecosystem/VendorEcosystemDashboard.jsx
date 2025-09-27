@@ -45,7 +45,6 @@ const VendorEcosystemDashboard = () => {
     try {
       setLoading(true);
       const data = await vendorEcosystemAPI.getVendorDashboard();
-      console.log('Dashboard data received:', data); // Debug log
       setDashboardData(data);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
