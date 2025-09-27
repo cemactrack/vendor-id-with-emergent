@@ -1862,6 +1862,7 @@ app.include_router(admin_router)
 app.include_router(escrow_router)
 app.include_router(ratings_router)
 app.include_router(biometric_router)
+app.include_router(security_router)
 app.include_router(public_router)
 
 app.add_middleware(
