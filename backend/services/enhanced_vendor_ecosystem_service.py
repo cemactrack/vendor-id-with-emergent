@@ -140,6 +140,7 @@ class VendorEcosystemService:
             
             # Create profile document
             profile_dict = {
+                "id": str(uuid.uuid4()),  # Add missing id field
                 "vendor_id": vendor_id,
                 "user_id": user_id,
                 **profile_data.dict(),
