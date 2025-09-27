@@ -27,6 +27,7 @@ import DocumentReview from "./components/admin/DocumentReview";
 import VerificationQueue from "./components/admin/VerificationQueue";
 import EscrowDashboard from "./components/escrow/EscrowDashboard";
 import OrderCreation from "./components/escrow/OrderCreation";
+import ProfileValidation from "./components/trust/ProfileValidation";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
