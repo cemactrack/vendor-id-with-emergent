@@ -106,7 +106,7 @@ const AppContent = () => {
           element={
             <PublicRoute>
               <div className="min-h-screen">
-                <LoginForm onSuccess={() => window.location.href = '/dashboard'} />
+                <LoginForm />
               </div>
             </PublicRoute>
           } 
