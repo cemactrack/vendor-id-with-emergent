@@ -30,6 +30,7 @@ from services.template_service import TemplateService
 from services.ocr_service import DocumentOCRService
 from services.escrow_service import EscrowService
 from services.rating_service import RatingService
+from services.biometric_service import BiometricService
 from utils.database_setup import DatabaseSetup
 
 ROOT_DIR = Path(__file__).parent
