@@ -59,6 +59,7 @@ admin_router = APIRouter(prefix="/api/admin")
 escrow_router = APIRouter(prefix="/api/escrow")
 ratings_router = APIRouter(prefix="/api/ratings")
 biometric_router = APIRouter(prefix="/api/biometric")
+security_router = APIRouter(prefix="/api/security")
 public_router = APIRouter(prefix="/api/public")
 
 # Initialize services
