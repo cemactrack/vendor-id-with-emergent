@@ -1812,6 +1812,250 @@ async def detect_review_manipulation(
         logger.error(f"Review manipulation detection failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =====================================
+# Trust & Validation Endpoints
+# =====================================
+
+@trust_router.post("/profile/validate")
+async def validate_vendor_profile(
+    current_user: dict = Depends(get_current_user)
+):
+    """Validate vendor profile completeness and trust signals"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        validation_result = await trust_validation_service.validate_vendor_profile(actual_vendor_id)
+        
+        return {
+            "success": True,
+            "validation": validation_result.dict(),
+            "message": f"Profile validation completed. Score: {validation_result.completion_score:.1f}%"
+        }
+    except Exception as e:
+        logger.error(f"Profile validation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.post("/address/verify")
+async def verify_business_address(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Verify business address using external services"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        verification_request = AddressVerificationRequest(
+            vendor_id=actual_vendor_id,
+            address=request.get("address"),
+            city=request.get("city"),
+            state=request.get("state"),
+            country=request.get("country"),
+            postal_code=request.get("postal_code"),
+            verification_method=request.get("verification_method", "google_places")
+        )
+        
+        result = await trust_validation_service.verify_business_address(verification_request)
+        
+        return {
+            "success": True,
+            "verification": result.dict(),
+            "message": "Address verified successfully" if result.is_verified else "Address verification failed"
+        }
+    except Exception as e:
+        logger.error(f"Address verification failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.post("/phone/verify")
+async def verify_phone_number(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Verify phone number with SMS/call verification"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        verification_request = PhoneVerificationRequest(
+            vendor_id=actual_vendor_id,
+            phone_number=request.get("phone_number"),
+            country_code=request.get("country_code", "+1"),
+            verification_method=request.get("verification_method", "sms")
+        )
+        
+        result = await trust_validation_service.verify_phone_number(verification_request)
+        
+        return {
+            "success": True,
+            "verification": result.dict(),
+            "message": "Phone verified successfully" if result.is_verified else f"Verification code sent via {result.verification_method}"
+        }
+    except Exception as e:
+        logger.error(f"Phone verification failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.get("/profile/freshness")
+async def check_profile_freshness(
+    current_user: dict = Depends(get_current_user)
+):
+    """Check profile freshness and get update recommendations"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        freshness_check = await trust_validation_service.check_profile_freshness(actual_vendor_id)
+        
+        return {
+            "success": True,
+            "freshness": freshness_check.dict(),
+            "message": f"Profile freshness: {freshness_check.freshness_score:.1f}%"
+        }
+    except Exception as e:
+        logger.error(f"Profile freshness check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.post("/badge/award")
+async def award_trust_badge(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Award trust badge to vendor (admin only)"""
+    try:
+        if current_user.get("role") not in ["admin", "system_admin", "verification_officer"]:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        
+        target_vendor_id = request.get("vendor_id")
+        badge_type = request.get("badge_type")
+        verification_data = request.get("verification_data", {})
+        
+        if not target_vendor_id or not badge_type:
+            raise HTTPException(status_code=400, detail="vendor_id and badge_type are required")
+        
+        try:
+            badge_enum = TrustBadgeType(badge_type)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid badge type")
+        
+        badge = await trust_validation_service.award_trust_badge(
+            target_vendor_id, badge_enum, verification_data
+        )
+        
+        return {
+            "success": True,
+            "badge": badge.dict(),
+            "message": f"Badge '{badge.badge_name}' awarded successfully"
+        }
+    except Exception as e:
+        logger.error(f"Badge awarding failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.get("/badges/{vendor_id}")
+async def get_vendor_trust_badges(
+    vendor_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get trust badges for a vendor"""
+    try:
+        badges_data = await db.trust_badges.find({
+            "vendor_id": vendor_id,
+            "is_active": True
+        }).sort("display_order", 1).to_list(length=None)
+        
+        badges = []
+        for badge_data in badges_data:
+            badge_data.pop("_id", None)
+            badges.append(badge_data)
+        
+        return {
+            "success": True,
+            "badges": badges,
+            "count": len(badges)
+        }
+    except Exception as e:
+        logger.error(f"Failed to get vendor badges: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@trust_router.post("/profile/enhance")
+async def enhance_vendor_profile(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Enhance vendor profile with additional trust signals"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        
+        # Get vendor profile first
+        vendor_profile = await db.vendor_profiles.find_one({"user_id": vendor_id})
+        if not vendor_profile:
+            raise HTTPException(status_code=404, detail="Vendor profile not found")
+        
+        actual_vendor_id = vendor_profile["vendor_id"]
+        
+        # Extract enhancement data
+        business_hours = request.get("business_hours", [])
+        business_contacts = request.get("business_contacts", [])
+        business_photos = request.get("business_photos", [])
+        client_testimonials = request.get("client_testimonials", [])
+        industry_certifications = request.get("industry_certifications", [])
+        
+        # Update vendor profile with enhancements
+        update_data = {
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        if business_hours:
+            update_data["business_hours"] = business_hours
+        if business_contacts:
+            update_data["business_contacts"] = business_contacts
+        if business_photos:
+            update_data["business_photos"] = business_photos
+        if client_testimonials:
+            update_data["client_testimonials"] = client_testimonials
+        if industry_certifications:
+            update_data["industry_certifications"] = industry_certifications
+        
+        await db.vendor_profiles.update_one(
+            {"vendor_id": actual_vendor_id},
+            {"$set": update_data}
+        )
+        
+        # Re-validate profile to update scores
+        validation_result = await trust_validation_service.validate_vendor_profile(actual_vendor_id)
+        
+        return {
+            "success": True,
+            "validation": validation_result.dict(),
+            "message": f"Profile enhanced successfully. New completion score: {validation_result.completion_score:.1f}%"
+        }
+    except Exception as e:
+        logger.error(f"Profile enhancement failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Rate limiting middleware
 @app.middleware("http")
 async def rate_limiting_middleware(request, call_next):
