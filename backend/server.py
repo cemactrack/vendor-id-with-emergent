@@ -1122,6 +1122,199 @@ async def get_escrow_dashboard(
         logger.error(f"Get escrow dashboard error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
 
+# ===== RATING & REVIEW ENDPOINTS =====
+
+@ratings_router.post("/submit")
+async def submit_rating(
+    rating_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Submit a rating and review for a vendor"""
+    try:
+        from models.rating_models import RatingCreate
+        
+        # Parse rating data
+        rating_create = RatingCreate(**rating_data)
+        
+        # Submit rating
+        success, result, error = await rating_service.submit_rating(current_user["user_id"], rating_create)
+        
+        if success:
+            return {
+                "message": "Rating submitted successfully",
+                "rating": result["rating"],
+                "vendor_score": result["vendor_score"]
+            }
+        else:
+            raise HTTPException(status_code=400, detail=error)
+            
+    except Exception as e:
+        logger.error(f"Submit rating error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit rating")
+
+@ratings_router.get("/vendor/{vendor_id}")
+async def get_vendor_ratings(
+    vendor_id: str,
+    limit: int = 50,
+    offset: int = 0
+):
+    """Get ratings for a specific vendor"""
+    try:
+        ratings, total = await rating_service.get_vendor_ratings(vendor_id, limit, offset)
+        
+        return {
+            "ratings": ratings,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(f"Get vendor ratings error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve ratings")
+
+@ratings_router.get("/vendor/{vendor_id}/score")
+async def get_vendor_score(vendor_id: str):
+    """Get vendor's current score and badge information"""
+    try:
+        score = await rating_service.get_vendor_score(vendor_id)
+        
+        if not score:
+            raise HTTPException(status_code=404, detail="Vendor score not found")
+        
+        return {"score": score}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get vendor score error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve vendor score")
+
+@ratings_router.get("/vendor/{vendor_id}/summary")
+async def get_vendor_rating_summary(vendor_id: str):
+    """Get vendor rating summary for display"""
+    try:
+        summary = await rating_service.get_vendor_rating_summary(vendor_id)
+        
+        if not summary:
+            # Return default summary for vendors with no ratings
+            return {
+                "summary": {
+                    "vendor_id": vendor_id,
+                    "overall_score": 0.0,
+                    "total_ratings": 0,
+                    "badge": "new_vendor",
+                    "recent_score_trend": "stable",
+                    "top_categories": []
+                }
+            }
+        
+        return {"summary": summary.dict()}
+        
+    except Exception as e:
+        logger.error(f"Get vendor summary error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve vendor summary")
+
+@ratings_router.get("/eligible-orders")
+async def get_rating_eligible_orders(
+    vendor_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get orders eligible for rating by current user"""
+    try:
+        eligible_orders = await rating_service.get_customer_rating_eligibility(
+            current_user["user_id"], vendor_id
+        )
+        
+        return {
+            "eligible_orders": eligible_orders,
+            "total": len(eligible_orders)
+        }
+        
+    except Exception as e:
+        logger.error(f"Get eligible orders error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve eligible orders")
+
+@ratings_router.get("/vendor/{vendor_id}/analytics")
+async def get_vendor_rating_analytics(
+    vendor_id: str,
+    period: str = "30d",
+    current_user: dict = Depends(get_current_user)
+):
+    """Get rating analytics for vendor (vendor access only)"""
+    try:
+        # Verify user is the vendor or admin
+        user_vendor_id = current_user.get("vendor_id", current_user["user_id"])
+        if user_vendor_id != vendor_id and current_user.get("role") != "verification_officer":
+            raise HTTPException(status_code=403, detail="Unauthorized to view analytics")
+        
+        analytics = await rating_service.get_rating_analytics(vendor_id, period)
+        
+        if not analytics:
+            return {
+                "analytics": {
+                    "period": period,
+                    "total_ratings": 0,
+                    "average_rating": 0.0,
+                    "rating_distribution": {},
+                    "category_averages": {},
+                    "trending_direction": "stable",
+                    "improvement_areas": []
+                }
+            }
+        
+        return {"analytics": analytics.dict()}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get rating analytics error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve rating analytics")
+
+# Admin Rating Management
+@ratings_router.get("/admin/flagged")
+async def get_flagged_reviews(
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Get flagged reviews for admin review"""
+    try:
+        # This would be implemented in rating_service
+        flagged_reviews = []
+        
+        return {
+            "flagged_reviews": flagged_reviews,
+            "total": len(flagged_reviews)
+        }
+        
+    except Exception as e:
+        logger.error(f"Get flagged reviews error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve flagged reviews")
+
+@ratings_router.get("/admin/vendor-badges")
+async def get_vendor_badge_distribution(
+    current_user: dict = Depends(require_role(UserRole.VERIFICATION_OFFICER))
+):
+    """Get distribution of vendor badges"""
+    try:
+        # Get badge distribution from database
+        pipeline = [
+            {"$group": {"_id": "$badge", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        
+        cursor = db.vendor_scores.aggregate(pipeline)
+        distribution = await cursor.to_list(length=None)
+        
+        badge_stats = {}
+        for item in distribution:
+            badge_stats[item["_id"]] = item["count"]
+        
+        return {"badge_distribution": badge_stats}
+        
+    except Exception as e:
+        logger.error(f"Get badge distribution error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve badge distribution")
+
 # Legacy endpoints for backward compatibility
 @api_router.get("/vendors", response_model=VendorsResponse)
 async def get_legacy_vendors(
