@@ -592,6 +592,9 @@ class EscrowService:
             dispute_dict = dispute.dict()
             await self.disputes_collection.insert_one(dispute_dict)
             
+            # Remove MongoDB _id field for JSON serialization
+            dispute_dict.pop('_id', None)
+            
             # Update order status
             await self.orders_collection.update_one(
                 {"order_id": dispute_data.order_id},
