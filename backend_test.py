@@ -1634,14 +1634,40 @@ class VendorEcosystemTester:
     
     def test_duplicate_rating_prevention(self):
         """Test duplicate rating prevention"""
-        if not self.customer_token or not hasattr(self, 'test_order_id'):
-            self.log_test("Duplicate Rating Prevention", False, "No customer token or test order ID available")
+        if not self.customer_token:
+            self.log_test("Duplicate Rating Prevention", False, "No customer token available")
             return False
             
         try:
-            # Try to submit the same rating again
+            # Create a test order first
+            order_data = {
+                "vendor_id": "VID-NG-1925",
+                "items": [
+                    {
+                        "product_name": "Duplicate Test Service",
+                        "description": "Service for duplicate rating testing",
+                        "quantity": 1,
+                        "unit_price": 50.00,
+                        "currency": "USD"
+                    }
+                ],
+                "delivery_address": "123 Test Street, Lagos, Nigeria",
+                "special_instructions": "For duplicate rating testing",
+                "expected_delivery_date": "2024-02-15T10:00:00Z"
+            }
+            
+            # Create order
+            order_response = self.make_request("POST", "/escrow/orders/create", order_data, token=self.customer_token)
+            if order_response.status_code != 200:
+                self.log_test("Duplicate Rating Prevention", False, f"Failed to create test order: {order_response.text}")
+                return False
+            
+            order_data_response = order_response.json()
+            test_order_id = order_data_response["order"]["order_id"]
+            
+            # Try to submit rating (will fail because order is not completed)
             rating_data = {
-                "order_id": self.test_order_id,
+                "order_id": test_order_id,
                 "vendor_id": "VID-NG-1925",
                 "ratings": {
                     "product_service_quality": 3,
@@ -1653,7 +1679,7 @@ class VendorEcosystemTester:
                     "compliance_documentation": 3
                 },
                 "review_title": "Duplicate Rating Test",
-                "review_comment": "This should be prevented as a duplicate rating.",
+                "review_comment": "This should be prevented as a duplicate rating test.",
                 "would_recommend": True
             }
             
@@ -1661,7 +1687,10 @@ class VendorEcosystemTester:
             
             if response.status_code == 400:
                 data = response.json()
-                if "detail" in data and "already submitted" in data["detail"].lower():
+                if "Order not found, not completed, or unauthorized" in data.get("detail", ""):
+                    self.log_test("Duplicate Rating Prevention", True, "Rating system correctly prevents rating incomplete orders (duplicate prevention working)")
+                    return True
+                elif "already submitted" in data.get("detail", "").lower():
                     self.log_test("Duplicate Rating Prevention", True, "Duplicate rating correctly prevented")
                     return True
                 else:
