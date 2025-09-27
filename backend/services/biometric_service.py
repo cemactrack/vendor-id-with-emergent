@@ -650,6 +650,99 @@ class BiometricProcessor:
             
         except Exception:
             return {"pattern_type": "unknown", "pattern_confidence": 0.0}
+    
+    def _extract_face_region_mediapipe(self, image_array: np.ndarray) -> Optional[np.ndarray]:
+        """Extract face region using MediaPipe"""
+        try:
+            with self.mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+                results = face_detection.process(image_array)
+                
+                if results.detections:
+                    detection = results.detections[0]
+                    bbox = detection.location_data.relative_bounding_box
+                    
+                    h, w, _ = image_array.shape
+                    x = int(bbox.xmin * w)
+                    y = int(bbox.ymin * h)
+                    width = int(bbox.width * w)
+                    height = int(bbox.height * h)
+                    
+                    # Extract face region with some padding
+                    padding = 20
+                    x = max(0, x - padding)
+                    y = max(0, y - padding)
+                    width = min(w - x, width + 2 * padding)
+                    height = min(h - y, height + 2 * padding)
+                    
+                    face_region = image_array[y:y+height, x:x+width]
+                    return face_region
+                    
+            return None
+            
+        except Exception as e:
+            logger.error(f"Face extraction failed: {e}")
+            return None
+    
+    def _calculate_face_similarity(self, face1: np.ndarray, face2: np.ndarray) -> float:
+        """Calculate similarity between two face regions using multiple methods"""
+        try:
+            # Resize faces to same size for comparison
+            target_size = (128, 128)
+            face1_resized = cv2.resize(face1, target_size)
+            face2_resized = cv2.resize(face2, target_size)
+            
+            # Convert to grayscale
+            gray1 = cv2.cvtColor(face1_resized, cv2.COLOR_RGB2GRAY)
+            gray2 = cv2.cvtColor(face2_resized, cv2.COLOR_RGB2GRAY)
+            
+            # Method 1: Template matching
+            result = cv2.matchTemplate(gray1, gray2, cv2.TM_CCOEFF_NORMED)
+            template_similarity = np.max(result)
+            
+            # Method 2: Histogram comparison
+            hist1 = cv2.calcHist([gray1], [0], None, [256], [0, 256])
+            hist2 = cv2.calcHist([gray2], [0], None, [256], [0, 256])
+            hist_similarity = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
+            
+            # Method 3: Structural similarity (SSIM approximation)
+            ssim_score = self._calculate_ssim_approx(gray1, gray2)
+            
+            # Combine similarities with weights
+            combined_similarity = (
+                template_similarity * 0.4 +
+                hist_similarity * 0.3 +
+                ssim_score * 0.3
+            )
+            
+            return max(0.0, min(1.0, combined_similarity))
+            
+        except Exception as e:
+            logger.error(f"Similarity calculation failed: {e}")
+            return 0.0
+    
+    def _calculate_ssim_approx(self, img1: np.ndarray, img2: np.ndarray) -> float:
+        """Approximate SSIM calculation"""
+        try:
+            # Calculate means
+            mu1 = np.mean(img1)
+            mu2 = np.mean(img2)
+            
+            # Calculate variances and covariance
+            var1 = np.var(img1)
+            var2 = np.var(img2)
+            cov = np.mean((img1 - mu1) * (img2 - mu2))
+            
+            # SSIM constants
+            c1 = (0.01 * 255) ** 2
+            c2 = (0.03 * 255) ** 2
+            
+            # SSIM formula
+            ssim = ((2 * mu1 * mu2 + c1) * (2 * cov + c2)) / ((mu1**2 + mu2**2 + c1) * (var1 + var2 + c2))
+            
+            return max(0.0, min(1.0, ssim))
+            
+        except Exception:
+            return 0.0
 
 class BiometricService:
     """Main biometric verification service"""
