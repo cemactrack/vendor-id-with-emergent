@@ -449,8 +449,21 @@ class AuthEnhancementService:
         """Get user security information"""
         try:
             security_doc = await self.user_security_collection.find_one({"user_id": user_id})
+            
+            # Get user info for email verification status
+            user_doc = await self.users_collection.find_one({"id": user_id})
+            
             if not security_doc:
-                return None
+                # Return default security info for new users
+                return {
+                    "user_id": user_id,
+                    "email_verified": user_doc.get("email_verified", False) if user_doc else False,
+                    "two_factor_enabled": False,
+                    "failed_login_attempts": 0,
+                    "account_locked_until": None,
+                    "created_at": user_doc.get("created_at") if user_doc else datetime.utcnow(),
+                    "updated_at": user_doc.get("updated_at") if user_doc else datetime.utcnow()
+                }
             
             # Remove sensitive data
             security_doc.pop("_id", None)
@@ -458,6 +471,18 @@ class AuthEnhancementService:
             security_doc.pop("backup_codes", None)
             security_doc.pop("email_verification_token", None)
             security_doc.pop("password_reset_token", None)
+            security_doc.pop("email_verification_expires", None)
+            security_doc.pop("password_reset_expires", None)
+            
+            # Ensure required fields are present
+            if "email_verified" not in security_doc and user_doc:
+                security_doc["email_verified"] = user_doc.get("email_verified", False)
+            
+            if "two_factor_enabled" not in security_doc:
+                security_doc["two_factor_enabled"] = False
+                
+            if "failed_login_attempts" not in security_doc:
+                security_doc["failed_login_attempts"] = 0
             
             return security_doc
             
