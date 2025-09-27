@@ -396,7 +396,7 @@ class BiometricProcessor:
             raise ValueError(f"Face matching failed: {str(e)}")
     
     def _match_faces_sync(self, request: FaceMatchRequest, ref_bytes: bytes, comp_bytes: bytes) -> FaceMatchResult:
-        """Synchronous face matching"""
+        """Synchronous face matching using MediaPipe and template matching"""
         try:
             # Load images
             ref_image = Image.open(io.BytesIO(ref_bytes))
@@ -406,11 +406,11 @@ class BiometricProcessor:
             ref_array = np.array(ref_image)
             comp_array = np.array(comp_image)
             
-            # Get face encodings
-            ref_encodings = face_recognition.face_encodings(ref_array)
-            comp_encodings = face_recognition.face_encodings(comp_array)
+            # Extract face regions using MediaPipe
+            ref_face = self._extract_face_region_mediapipe(ref_array)
+            comp_face = self._extract_face_region_mediapipe(comp_array)
             
-            if not ref_encodings:
+            if ref_face is None:
                 return FaceMatchResult(
                     vendor_id=request.vendor_id,
                     similarity_score=0.0,
@@ -421,7 +421,7 @@ class BiometricProcessor:
                     processing_metadata={"error": "No face found in reference image"}
                 )
             
-            if not comp_encodings:
+            if comp_face is None:
                 return FaceMatchResult(
                     vendor_id=request.vendor_id,
                     similarity_score=0.0,
@@ -432,9 +432,8 @@ class BiometricProcessor:
                     processing_metadata={"error": "No face found in comparison image"}
                 )
             
-            # Calculate face distance (similarity)
-            face_distance = face_recognition.face_distance([ref_encodings[0]], comp_encodings[0])[0]
-            similarity_score = 1.0 - face_distance  # Convert distance to similarity
+            # Calculate similarity using template matching and histogram comparison
+            similarity_score = self._calculate_face_similarity(ref_face, comp_face)
             
             # Assess face quality (simplified)
             ref_quality = self._assess_face_quality(ref_array)
