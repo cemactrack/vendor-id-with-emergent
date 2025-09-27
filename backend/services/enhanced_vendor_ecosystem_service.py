@@ -51,7 +51,6 @@ class VendorEcosystemService:
                 "password_hash": hashed_password,
                 "role": user_data.role.value if isinstance(user_data.role, UserRole) else user_data.role,
                 "phone": user_data.phone,
-                "organization": getattr(user_data, 'organization', None),
                 "country": user_data.country.value if user_data.country else None,
                 "email_verified": False,
                 "is_active": True,
