@@ -1344,6 +1344,229 @@ async def create_legacy_vendor(vendor_data: VendorCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# =====================================
+# Biometric Verification Endpoints
+# =====================================
+
+@biometric_router.post("/verification/start")
+async def start_biometric_verification(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start biometric verification session"""
+    try:
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        if not vendor_id:
+            raise HTTPException(status_code=400, detail="Vendor ID required")
+        
+        session_type = request.get("session_type", "initial_verification")
+        session = await biometric_service.start_verification_session(vendor_id, session_type)
+        
+        return {
+            "success": True,
+            "session": session.dict(),
+            "next_step": "document_upload",
+            "message": "Biometric verification session started"
+        }
+    except Exception as e:
+        logger.error(f"Failed to start biometric verification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@biometric_router.get("/verification/status/{vendor_id}")
+async def get_biometric_status(
+    vendor_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get biometric verification status"""
+    try:
+        # Check authorization - user can only access their own status or admin can access any
+        if current_user.get("vendor_id") != vendor_id and current_user.get("user_id") != vendor_id:
+            if current_user.get("role") != "admin":
+                raise HTTPException(status_code=403, detail="Access denied")
+        
+        status = await biometric_service.get_verification_status(vendor_id)
+        return {
+            "success": True,
+            "status": status.dict()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get biometric status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@biometric_router.post("/document/analyze")
+async def analyze_document(
+    file: UploadFile = File(...),
+    document_type: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Analyze uploaded identity document"""
+    try:
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only JPEG, PNG, and WebP allowed")
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Convert to base64
+        import base64
+        file_base64 = base64.b64encode(file_content).decode()
+        
+        # Process document
+        from models.biometric_models import DocumentType, DocumentUploadRequest
+        doc_type = DocumentType(document_type)
+        
+        upload_request = DocumentUploadRequest(
+            document_type=doc_type,
+            image_data=f"data:{file.content_type};base64,{file_base64}",
+            file_name=file.filename,
+            vendor_id=current_user.get("vendor_id") or current_user.get("user_id")
+        )
+        
+        result = await biometric_service.processor.process_document_analysis(
+            upload_request.image_data,
+            upload_request.document_type
+        )
+        
+        return {
+            "success": True,
+            "analysis_result": result.dict(),
+            "message": "Document analyzed successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Document analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@biometric_router.post("/liveness/challenge")
+async def create_liveness_challenge(
+    request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create liveness detection challenge"""
+    try:
+        from models.biometric_models import LivenessChallenge, LivenessCheckType
+        
+        vendor_id = current_user.get("vendor_id") or current_user.get("user_id")
+        challenge_types = [LivenessCheckType.BLINK, LivenessCheckType.HEAD_TURN_LEFT, LivenessCheckType.SMILE]
+        
+        challenge = LivenessChallenge(
+            vendor_id=vendor_id,
+            challenge_type=challenge_types[0],  # Start with first challenge
+            challenge_sequence=challenge_types,
+            instructions="Please perform the following actions: blink, turn head left, then smile",
+            timeout_seconds=30
+        )
+        
+        # Store challenge in database
+        challenge_dict = challenge.dict()
+        await biometric_service.db.liveness_challenges.insert_one(challenge_dict)
+        challenge_dict.pop("_id", None)
+        
+        return {
+            "success": True,
+            "challenge": challenge_dict,
+            "message": "Liveness challenge created"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to create liveness challenge: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@biometric_router.post("/liveness/respond")
+async def respond_to_liveness_challenge(
+    file: UploadFile = File(...),
+    challenge_id: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Respond to liveness challenge with video/image"""
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Convert to base64
+        import base64
+        file_base64 = base64.b64encode(file_content).decode()
+        
+        # Get challenge
+        challenge_data = await biometric_service.db.liveness_challenges.find_one({"challenge_id": challenge_id})
+        if not challenge_data:
+            raise HTTPException(status_code=404, detail="Challenge not found")
+        
+        challenge_data.pop("_id", None)
+        from models.biometric_models import LivenessChallenge, LivenessResponse
+        challenge = LivenessChallenge(**challenge_data)
+        
+        # Create response
+        response = LivenessResponse(
+            challenge_id=challenge_id,
+            response_data=f"data:{file.content_type};base64,{file_base64}"
+        )
+        
+        # Process liveness
+        result = await biometric_service.processor.perform_liveness_check(challenge, response)
+        
+        # Store result
+        result_dict = result.dict()
+        await biometric_service.db.liveness_results.insert_one(result_dict)
+        result_dict.pop("_id", None)
+        
+        return {
+            "success": True,
+            "liveness_result": result_dict,
+            "message": "Liveness check completed"
+        }
+        
+    except Exception as e:
+        logger.error(f"Liveness response failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@biometric_router.post("/face/match")
+async def match_faces(
+    reference_file: UploadFile = File(...),
+    comparison_file: UploadFile = File(...),
+    match_threshold: float = Form(0.75),
+    current_user: dict = Depends(get_current_user)
+):
+    """Match faces between reference and comparison images"""
+    try:
+        # Read files
+        ref_content = await reference_file.read()
+        comp_content = await comparison_file.read()
+        
+        # Convert to base64
+        import base64
+        ref_base64 = base64.b64encode(ref_content).decode()
+        comp_base64 = base64.b64encode(comp_content).decode()
+        
+        # Create match request
+        from models.biometric_models import FaceMatchRequest
+        match_request = FaceMatchRequest(
+            vendor_id=current_user.get("vendor_id") or current_user.get("user_id"),
+            reference_image=f"data:{reference_file.content_type};base64,{ref_base64}",
+            comparison_image=f"data:{comparison_file.content_type};base64,{comp_base64}",
+            match_threshold=match_threshold
+        )
+        
+        # Perform matching
+        result = await biometric_service.processor.perform_face_matching(match_request)
+        
+        # Store result
+        result_dict = result.dict()
+        await biometric_service.db.face_match_results.insert_one(result_dict)
+        result_dict.pop("_id", None)
+        
+        return {
+            "success": True,
+            "match_result": result_dict,
+            "message": "Face matching completed"
+        }
+        
+    except Exception as e:
+        logger.error(f"Face matching failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include routers
 app.include_router(api_router)
 app.include_router(auth_router)
