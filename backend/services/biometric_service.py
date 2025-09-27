@@ -90,21 +90,32 @@ class BiometricProcessor:
             face_confidence = 0.0
             face_image_path = None
             
-            # Use face_recognition library for face detection
+            # Use MediaPipe for face detection
             rgb_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-            face_locations = face_recognition.face_locations(rgb_image, model="hog")
             
-            if face_locations:
-                face_extracted = True
-                face_confidence = 0.8  # Simplified confidence score
+            with self.mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face_detection:
+                results = face_detection.process(rgb_image)
                 
-                # Extract and save face image
-                top, right, bottom, left = face_locations[0]
-                face_image = rgb_image[top:bottom, left:right]
-                
-                # Save face image (in production, save to secure storage)
-                face_image_path = f"/tmp/face_{uuid.uuid4().hex}.jpg"
-                cv2.imwrite(face_image_path, cv2.cvtColor(face_image, cv2.COLOR_RGB2BGR))
+                if results.detections:
+                    face_extracted = True
+                    face_confidence = results.detections[0].score[0]  # Use actual confidence from MediaPipe
+                    
+                    # Extract face bounding box
+                    detection = results.detections[0]
+                    bbox = detection.location_data.relative_bounding_box
+                    
+                    h, w, _ = rgb_image.shape
+                    x = int(bbox.xmin * w)
+                    y = int(bbox.ymin * h)
+                    width = int(bbox.width * w)
+                    height = int(bbox.height * h)
+                    
+                    # Extract and save face image
+                    face_image = rgb_image[y:y+height, x:x+width]
+                    
+                    # Save face image (in production, save to secure storage)
+                    face_image_path = f"/tmp/face_{uuid.uuid4().hex}.jpg"
+                    cv2.imwrite(face_image_path, cv2.cvtColor(face_image, cv2.COLOR_RGB2BGR))
             
             # OCR text extraction (simplified - in production use Tesseract or cloud OCR)
             extracted_text = self._extract_document_text(cv_image, document_type)
