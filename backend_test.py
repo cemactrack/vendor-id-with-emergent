@@ -1190,30 +1190,48 @@ class VendorEcosystemTester:
             return False
     
     def run_all_tests(self):
-        """Run all backend tests"""
-        print("🚀 Starting Vendor Ecosystem Backend API Tests with OCR Integration")
-        print("=" * 70)
+        """Run all backend tests including comprehensive enhancements"""
+        print("🚀 Starting Comprehensive Vendor Ecosystem Backend API Tests")
+        print("Testing: email_service, two_factor_service, enhanced_vendor_ecosystem_service, error_handler, validators")
+        print("=" * 80)
         
         # Health check
         self.test_health_check()
         
-        # Authentication tests
+        # Enhanced Authentication tests
+        print("\n🔐 Enhanced Authentication & Security Tests")
+        print("-" * 50)
         self.test_user_registration()
         self.test_admin_registration()
         self.test_user_login()
         self.test_admin_login()
+        self.test_comprehensive_authentication_flow()
+        
+        # New Enhanced Security Features
+        print("\n🛡️ Enhanced Security Features Tests")
+        print("-" * 50)
+        self.test_email_verification_workflow()
+        self.test_password_reset_workflow()
+        self.test_two_factor_authentication_setup()
+        self.test_security_info_endpoint()
+        self.test_security_events_endpoint()
         
         # Vendor profile tests
+        print("\n👤 Vendor Profile Management Tests")
+        print("-" * 50)
         self.test_vendor_profile_creation()
         self.test_vendor_dashboard()
+        self.test_enhanced_vendor_ecosystem_service()
         
         # Document management tests
+        print("\n📄 Document Management Tests")
+        print("-" * 50)
         self.test_document_upload()
         self.test_document_listing()
         
         # OCR Integration Tests
-        print("\n📄 Starting OCR Integration Tests")
-        print("-" * 40)
+        print("\n🔍 OCR Integration Tests")
+        print("-" * 50)
         self.upload_test_document_for_ocr()
         self.test_ocr_document_processing()
         self.test_ocr_results_retrieval()
@@ -1223,12 +1241,23 @@ class VendorEcosystemTester:
         self.test_ocr_error_handling()
         
         # Admin functionality tests
+        print("\n⚙️ Admin Functionality Tests")
+        print("-" * 50)
         self.test_admin_stats()
         self.test_pending_verifications()
         
         # Public endpoint tests
+        print("\n🌐 Public Endpoint Tests")
+        print("-" * 50)
         self.test_public_vendor_search()
         self.test_public_vendor_verification()
+        
+        # Enhanced System Tests
+        print("\n🔧 Enhanced System & Validation Tests")
+        print("-" * 50)
+        self.test_enhanced_error_handling()
+        self.test_input_validation()
+        self.test_api_consistency_fixes()
         
         # Summary
         self.print_summary()
