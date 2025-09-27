@@ -14,7 +14,8 @@ import {
   ChevronDown,
   Lock,
   Eye,
-  HelpCircle
+  HelpCircle,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
