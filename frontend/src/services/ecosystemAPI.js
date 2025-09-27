@@ -30,12 +30,10 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      console.log('401 error intercepted, NOT clearing localStorage for debugging');
       setAuthToken(null);
-      // TEMPORARILY DISABLED for debugging
-      // localStorage.removeItem('vendor_ecosystem_token');
-      // localStorage.removeItem('vendor_ecosystem_user');
-      // window.location.href = '/login';
+      localStorage.removeItem('vendor_ecosystem_token');
+      localStorage.removeItem('vendor_ecosystem_user');
+      window.location.href = '/login';
     }
     console.error('API Error:', error);
     throw error;
