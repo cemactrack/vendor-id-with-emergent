@@ -38,16 +38,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log('AuthContext: Starting login for:', email);
       const response = await vendorEcosystemAPI.login(email, password);
-      console.log('AuthContext: API response:', response);
-      
       const { user: userData, token: userToken } = response;
-      console.log('AuthContext: Extracted user:', userData);
-      console.log('AuthContext: Extracted token:', userToken ? userToken.substring(0, 20) + '...' : 'null');
       
       if (!userData || !userToken) {
-        console.error('AuthContext: Missing user or token in response');
         return { 
           success: false, 
           error: 'Invalid response from server' 
@@ -63,10 +57,9 @@ export const AuthProvider = ({ children }) => {
       
       vendorEcosystemAPI.setAuthToken(userToken);
       
-      console.log('AuthContext: Login successful, state updated');
       return { success: true, user: userData };
     } catch (error) {
-      console.error('AuthContext: Login error:', error);
+      console.error('Login error:', error);
       return { 
         success: false, 
         error: error.response?.data?.detail || error.message || 'Login failed' 
