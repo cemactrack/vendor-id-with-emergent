@@ -36,6 +36,8 @@ class VendorEcosystemTester:
         self.test_order_id = None
         self.test_escrow_id = None
         self.test_payment_instruction_id = None
+        self.biometric_session_id = None
+        self.biometric_challenge_id = None
     
     @property
     def customer_token(self):
