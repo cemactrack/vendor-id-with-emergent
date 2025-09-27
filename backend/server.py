@@ -65,6 +65,7 @@ ratings_router = APIRouter(prefix="/api/ratings")
 biometric_router = APIRouter(prefix="/api/biometric")
 security_router = APIRouter(prefix="/api/security")
 trust_router = APIRouter(prefix="/api/trust")
+profile_router = APIRouter(prefix="/api/profile")
 public_router = APIRouter(prefix="/api/public")
 
 # Initialize services
