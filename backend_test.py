@@ -2290,6 +2290,19 @@ class VendorEcosystemTester:
         self.test_escrow_transaction_audit_trail()
         self.test_escrow_platform_fee_calculation()
         
+        # ===== NEW RATING & REVIEW SYSTEM TESTS =====
+        print("\n⭐ Rating & Review System Tests")
+        print("-" * 50)
+        self.test_rating_submission()
+        self.test_vendor_score_retrieval()
+        self.test_vendor_ratings_listing()
+        self.test_vendor_rating_summary()
+        self.test_rating_eligible_orders()
+        self.test_rating_analytics()
+        self.test_admin_badge_distribution()
+        self.test_duplicate_rating_prevention()
+        self.test_rating_validation()
+        
         # Summary
         self.print_summary()
     
