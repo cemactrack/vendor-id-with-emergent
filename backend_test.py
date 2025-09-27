@@ -1290,7 +1290,8 @@ class VendorEcosystemTester:
     
     def test_escrow_payment_proof_submission(self):
         """Test payment proof submission workflow"""
-        if not self.customer_token or not hasattr(self, 'test_payment_instruction_id'):
+        customer_token = self.user_token
+        if not customer_token or not hasattr(self, 'test_payment_instruction_id'):
             self.log_test("Payment Proof Submission", False, "No customer token or payment instruction ID available")
             return False
             
@@ -1303,7 +1304,7 @@ class VendorEcosystemTester:
                 "proof_files": ["receipt_001.jpg", "bank_statement.pdf"]
             }
             
-            response = self.make_request("POST", "/escrow/payments/submit-proof", payment_proof_data, token=self.customer_token)
+            response = self.make_request("POST", "/escrow/payments/submit-proof", payment_proof_data, token=customer_token)
             
             if response.status_code == 200:
                 data = response.json()
