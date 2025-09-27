@@ -887,6 +887,307 @@ class VendorEcosystemTester:
         except Exception as e:
             self.log_test("OCR Error Handling", False, f"OCR error handling test error: {str(e)}")
             return False
+
+    # ===== NEW COMPREHENSIVE TESTS FOR ENHANCED SERVICES =====
+    
+    def test_email_verification_workflow(self):
+        """Test email verification workflow"""
+        if not self.vendor_token:
+            self.log_test("Email Verification Workflow", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test resend verification email
+            response = self.make_request("POST", "/auth/resend-verification", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "sent" in data["message"].lower():
+                    self.log_test("Email Verification Workflow", True, "Email verification resend successful (mock mode)")
+                    return True
+                else:
+                    self.log_test("Email Verification Workflow", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Email Verification Workflow", False, f"Resend verification failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Email Verification Workflow", False, f"Email verification test error: {str(e)}")
+            return False
+    
+    def test_password_reset_workflow(self):
+        """Test password reset workflow"""
+        try:
+            # Test forgot password request
+            reset_data = {"email": TEST_USER_EMAIL}
+            response = self.make_request("POST", "/auth/forgot-password", reset_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "sent" in data["message"].lower():
+                    self.log_test("Password Reset Workflow", True, "Password reset request successful (prevents email enumeration)")
+                    return True
+                else:
+                    self.log_test("Password Reset Workflow", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Password Reset Workflow", False, f"Password reset request failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Password Reset Workflow", False, f"Password reset test error: {str(e)}")
+            return False
+    
+    def test_two_factor_authentication_setup(self):
+        """Test 2FA setup workflow"""
+        if not self.vendor_token:
+            self.log_test("2FA Setup", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test 2FA setup
+            setup_data = {"password": TEST_USER_PASSWORD}
+            response = self.make_request("POST", "/auth/2fa/setup", setup_data, token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "setup_data" in data and "qr_code" in data["setup_data"]:
+                    setup_data = data["setup_data"]
+                    required_fields = ["qr_code", "setup_key", "backup_codes", "issuer"]
+                    missing_fields = [field for field in required_fields if field not in setup_data]
+                    
+                    if not missing_fields:
+                        self.log_test("2FA Setup", True, "2FA setup successful with QR code and backup codes", 
+                                    {
+                                        "issuer": setup_data["issuer"],
+                                        "backup_codes_count": len(setup_data["backup_codes"]),
+                                        "qr_code_present": "data:image/png;base64," in setup_data["qr_code"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("2FA Setup", False, f"Missing setup data fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("2FA Setup", False, "Missing setup_data or qr_code in response", data)
+                    return False
+            else:
+                self.log_test("2FA Setup", False, f"2FA setup failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("2FA Setup", False, f"2FA setup test error: {str(e)}")
+            return False
+    
+    def test_security_info_endpoint(self):
+        """Test security info endpoint"""
+        if not self.vendor_token:
+            self.log_test("Security Info", False, "No vendor token available")
+            return False
+            
+        try:
+            response = self.make_request("GET", "/auth/security/info", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "security" in data:
+                    security_info = data["security"]
+                    required_fields = ["user_id", "email_verified", "two_factor_enabled", "failed_login_attempts"]
+                    missing_fields = [field for field in required_fields if field not in security_info]
+                    
+                    if not missing_fields:
+                        self.log_test("Security Info", True, "Security info retrieved successfully", 
+                                    {
+                                        "email_verified": security_info["email_verified"],
+                                        "two_factor_enabled": security_info["two_factor_enabled"],
+                                        "failed_attempts": security_info["failed_login_attempts"]
+                                    })
+                        return True
+                    else:
+                        self.log_test("Security Info", False, f"Missing security info fields: {missing_fields}")
+                        return False
+                else:
+                    self.log_test("Security Info", False, "Missing security in response", data)
+                    return False
+            else:
+                self.log_test("Security Info", False, f"Security info request failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Security Info", False, f"Security info test error: {str(e)}")
+            return False
+    
+    def test_security_events_endpoint(self):
+        """Test security events endpoint"""
+        if not self.vendor_token:
+            self.log_test("Security Events", False, "No vendor token available")
+            return False
+            
+        try:
+            response = self.make_request("GET", "/auth/security/events?limit=10", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "events" in data:
+                    events = data["events"]
+                    self.log_test("Security Events", True, f"Security events retrieved successfully ({len(events)} events)")
+                    return True
+                else:
+                    self.log_test("Security Events", False, "Missing events in response", data)
+                    return False
+            else:
+                self.log_test("Security Events", False, f"Security events request failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Security Events", False, f"Security events test error: {str(e)}")
+            return False
+    
+    def test_enhanced_error_handling(self):
+        """Test enhanced error handling middleware"""
+        try:
+            # Test with invalid endpoint to trigger error handling
+            response = self.make_request("GET", "/invalid-endpoint-test")
+            
+            if response.status_code == 404:
+                try:
+                    data = response.json()
+                    # Check if error response has proper structure
+                    if "detail" in data:
+                        self.log_test("Enhanced Error Handling", True, "Error handling middleware working correctly")
+                        return True
+                    else:
+                        self.log_test("Enhanced Error Handling", False, f"Error response missing proper structure: {data}")
+                        return False
+                except:
+                    self.log_test("Enhanced Error Handling", True, "Error handling working (non-JSON response)")
+                    return True
+            else:
+                self.log_test("Enhanced Error Handling", False, f"Unexpected status code: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Enhanced Error Handling", False, f"Error handling test error: {str(e)}")
+            return False
+    
+    def test_input_validation(self):
+        """Test input validation with invalid data"""
+        try:
+            # Test registration with invalid email
+            invalid_user_data = {
+                "email": "invalid-email",
+                "password": "weak",
+                "full_name": "",
+                "phone": "invalid-phone",
+                "country": "INVALID",
+                "role": "invalid_role"
+            }
+            
+            response = self.make_request("POST", "/auth/register", invalid_user_data)
+            
+            if response.status_code in [400, 422]:  # Validation error
+                self.log_test("Input Validation", True, "Input validation working correctly - rejected invalid data")
+                return True
+            else:
+                self.log_test("Input Validation", False, f"Expected validation error but got {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Input Validation", False, f"Input validation test error: {str(e)}")
+            return False
+    
+    def test_enhanced_vendor_ecosystem_service(self):
+        """Test enhanced vendor ecosystem service features"""
+        if not self.vendor_token:
+            self.log_test("Enhanced Vendor Ecosystem Service", False, "No vendor token available")
+            return False
+            
+        try:
+            # Test enhanced dashboard with additional fields
+            response = self.make_request("GET", "/vendors/dashboard", token=self.vendor_token)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "dashboard" in data:
+                    dashboard = data["dashboard"]
+                    # Check for enhanced fields
+                    enhanced_fields = ["profile", "analytics", "verification_status", "trust_events"]
+                    present_fields = [field for field in enhanced_fields if field in data]
+                    
+                    if len(present_fields) >= 2:  # At least 2 enhanced fields present
+                        self.log_test("Enhanced Vendor Ecosystem Service", True, 
+                                    f"Enhanced service working with {len(present_fields)} enhanced fields", 
+                                    {"enhanced_fields": present_fields})
+                        return True
+                    else:
+                        self.log_test("Enhanced Vendor Ecosystem Service", False, 
+                                    f"Missing enhanced fields. Present: {present_fields}")
+                        return False
+                else:
+                    self.log_test("Enhanced Vendor Ecosystem Service", False, "Missing dashboard in response", data)
+                    return False
+            else:
+                self.log_test("Enhanced Vendor Ecosystem Service", False, f"Dashboard request failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Enhanced Vendor Ecosystem Service", False, f"Enhanced service test error: {str(e)}")
+            return False
+    
+    def test_api_consistency_fixes(self):
+        """Test API consistency fixes"""
+        try:
+            # Test health check for consistent response format
+            response = self.make_request("GET", "/")
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["message", "version", "status", "features"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if not missing_fields:
+                    self.log_test("API Consistency Fixes", True, "API response format consistent", 
+                                {"version": data["version"], "features_count": len(data["features"])})
+                    return True
+                else:
+                    self.log_test("API Consistency Fixes", False, f"Missing API fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("API Consistency Fixes", False, f"Health check failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("API Consistency Fixes", False, f"API consistency test error: {str(e)}")
+            return False
+    
+    def test_comprehensive_authentication_flow(self):
+        """Test comprehensive authentication flow with all enhancements"""
+        try:
+            # Test login with enhanced features
+            url = f"{self.base_url}/auth/login?email={TEST_USER_EMAIL}&password={TEST_USER_PASSWORD}"
+            response = requests.post(url, headers={"Content-Type": "application/json"}, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "token" in data and "user" in data:
+                    # Check for enhanced login response
+                    enhanced_fields = ["message"]
+                    present_fields = [field for field in enhanced_fields if field in data]
+                    
+                    self.log_test("Comprehensive Authentication Flow", True, 
+                                "Enhanced authentication flow working", 
+                                {"enhanced_fields": present_fields, "user_role": data["user"]["role"]})
+                    return True
+                else:
+                    self.log_test("Comprehensive Authentication Flow", False, "Missing token or user in response", data)
+                    return False
+            else:
+                self.log_test("Comprehensive Authentication Flow", False, f"Enhanced login failed: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Comprehensive Authentication Flow", False, f"Comprehensive auth test error: {str(e)}")
+            return False
     
     def run_all_tests(self):
         """Run all backend tests"""
