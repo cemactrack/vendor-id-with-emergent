@@ -328,10 +328,29 @@ async def get_vendor_profile(vendor_id: str):
 async def get_vendor_dashboard(current_user: dict = Depends(get_current_user)):
     """Get vendor dashboard data"""
     try:
+        logger.info(f"Dashboard request for user: {current_user}")
+        
+        # Try to get dashboard data
         dashboard_data = await ecosystem_service.get_vendor_dashboard(current_user["user_id"])
-        return dashboard_data
+        
+        return {
+            "success": True,
+            "dashboard": dashboard_data.get("dashboard", {}),
+            "profile": dashboard_data.get("profile", {}),
+            "analytics": dashboard_data.get("analytics", {}),
+            "active_listings": dashboard_data.get("active_listings", []),
+            "verification_status": dashboard_data.get("verification_status", {}),
+            "trust_events": dashboard_data.get("trust_events", []),
+            "integrations": dashboard_data.get("integrations", []),
+            "documents": dashboard_data.get("documents", []),
+            "security_events": dashboard_data.get("security_events", [])
+        }
+    except ValueError as ve:
+        logger.error(f"Dashboard data error for user {current_user.get('user_id')}: {ve}")
+        raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to fetch dashboard data")
+        logger.error(f"Dashboard fetch failed for user {current_user.get('user_id')}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch dashboard data: {str(e)}")
 
 # Document Management Endpoints
 @vendor_router.post("/documents/upload")
