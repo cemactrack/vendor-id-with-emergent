@@ -22,8 +22,7 @@ class TrustValidationService:
         self.phone_verifications_collection = db.phone_verifications
         self.profile_freshness_collection = db.profile_freshness_checks
         
-        # Initialize validation rules
-        asyncio.create_task(self._initialize_validation_rules())
+        # Validation rules will be initialized on first use
     
     async def validate_vendor_profile(self, vendor_id: str) -> ProfileValidationResult:
         """Comprehensive profile validation with trust scoring"""
