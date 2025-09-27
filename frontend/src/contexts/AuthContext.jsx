@@ -18,31 +18,22 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    console.log('AuthContext: useEffect running, checking localStorage...');
     const savedToken = localStorage.getItem('vendor_ecosystem_token');
     const savedUser = localStorage.getItem('vendor_ecosystem_user');
-    
-    console.log('AuthContext: savedToken:', savedToken ? savedToken.substring(0, 20) + '...' : 'null');
-    console.log('AuthContext: savedUser:', savedUser ? 'found' : 'null');
     
     if (savedToken && savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        console.log('AuthContext: Parsed user data:', userData);
         setToken(savedToken);
         setUser(userData);
         setIsAuthenticated(true);
         vendorEcosystemAPI.setAuthToken(savedToken);
-        console.log('AuthContext: Authentication state set to true');
       } catch (error) {
-        console.error('AuthContext: Error parsing saved user data:', error);
+        console.error('Error parsing saved user data:', error);
         logout();
       }
-    } else {
-      console.log('AuthContext: No saved credentials found');
     }
     setLoading(false);
-    console.log('AuthContext: Loading set to false');
   }, []);
 
   const login = async (email, password) => {
