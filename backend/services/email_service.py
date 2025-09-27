@@ -2,8 +2,8 @@ import smtplib
 import secrets
 import string
 import logging
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Optional, Tuple
 import os
 import asyncio
@@ -193,13 +193,13 @@ class EmailService:
                 logger.warning("SMTP credentials not configured, skipping email send")
                 return True  # Return True to not block functionality
             
-            msg = MimeMultipart('alternative')
+            msg = MIMEMultipart('alternative')
             msg['From'] = self.from_email
             msg['To'] = to_email
             msg['Subject'] = subject
             
             # Add HTML content
-            html_part = MimeText(html_content, 'html')
+            html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
             
             # Send email in thread pool to avoid blocking
@@ -211,7 +211,7 @@ class EmailService:
             logger.error(f"Failed to send email to {to_email}: {e}")
             return False
     
-    def _smtp_send(self, msg: MimeMultipart, to_email: str) -> bool:
+    def _smtp_send(self, msg: MIMEMultipart, to_email: str) -> bool:
         """Send email via SMTP (blocking operation for thread pool)"""
         try:
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
