@@ -2454,6 +2454,7 @@ app.include_router(ratings_router)
 app.include_router(biometric_router)
 app.include_router(security_router)
 app.include_router(trust_router)
+app.include_router(profile_router)
 app.include_router(public_router)
 
 app.add_middleware(
